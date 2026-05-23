@@ -9,17 +9,38 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <style>
+    /* =========================================================
+       YENİ KURUMSAL RENK PALETİ
+       Ana Gövde: #1E2229
+       Kartlar/İç Alanlar: #262B35
+       Input/Menü Zeminleri: #1A1D24
+       Ana Turuncu: #F27A1A
+       Soft Turuncu: #FF9838
+       Birincil Metin: #FFFFFF
+       İkincil Metin: #A0AAB5
+       Placeholder/Pasif: #626D7A
+       Kenarlıklar: #38404B
+    ========================================================= */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0f1117; color: #e2e8f0; font-family: system-ui, sans-serif; }
+    body { background: #1E2229; color: #FFFFFF; font-family: system-ui, sans-serif; }
+    
     input[type=text], input[type=password], input[type=number] {
       width: 100%; padding: 7px 10px; border-radius: 6px;
-      border: 1px solid #2d3148; background: #1a1d27;
-      color: #e2e8f0; font-size: 12px; outline: none;
+      border: 1px solid #38404B; background: #1A1D24;
+      color: #FFFFFF; font-size: 12px; outline: none;
+      transition: border-color 0.2s;
     }
-    input[type=checkbox] { accent-color: #f27a1a; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0f1117; }
-    ::-webkit-scrollbar-thumb { background: #2d3148; border-radius: 3px; }
+    input[type=text]:focus, input[type=password]:focus, input[type=number]:focus {
+      border-color: #F27A1A;
+    }
+    ::placeholder { color: #626D7A; opacity: 1; }
+    input[type=checkbox] { accent-color: #F27A1A; }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1A1D24; }
+    ::-webkit-scrollbar-thumb { background: #38404B; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #626D7A; }
+
     @media print {
       #app { display: none !important; }
       #print-area { display: block !important; }
@@ -28,34 +49,35 @@
     }
     #print-area { display: none; }
 
+    /* Kargo Tablosu Karanlık Tema Uyarlaması */
     .kargo-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
-      background: #fff;
-      color: #1a1a2e;
+      background: #262B35;
+      color: #FFFFFF;
     }
     .kargo-table th {
-      background: #f8f9fa;
-      border-bottom: 2px solid #dee2e6;
-      border-right: 1px solid #dee2e6;
+      background: #1A1D24;
+      border-bottom: 2px solid #38404B;
+      border-right: 1px solid #38404B;
       padding: 10px 12px;
       text-align: left;
       font-weight: 600;
       font-size: 12px;
-      color: #495057;
+      color: #FFFFFF;
       white-space: nowrap;
     }
     .kargo-table th:last-child { border-right: none; }
     .kargo-table td {
-      border-bottom: 1px solid #dee2e6;
-      border-right: 1px solid #dee2e6;
+      border-bottom: 1px solid #38404B;
+      border-right: 1px solid #38404B;
       padding: 12px;
       vertical-align: top;
     }
     .kargo-table td:last-child { border-right: none; }
     .kargo-table tr:last-child td { border-bottom: none; }
-    .kargo-table tr:hover td { background: #f8f9ff; }
+    .kargo-table tr:hover td { background: #1E2229; } /* Hover efekti */
 
     .badge-cargo {
       display: inline-block;
@@ -63,25 +85,25 @@
       border-radius: 4px;
       font-size: 10px;
       font-weight: 700;
-      background: #fff3e0;
-      color: #e65100;
-      border: 1px solid #ffb74d;
+      background: #1A1D24;
+      color: #FF9838;
+      border: 1px solid #F27A1A;
     }
     .product-img {
       width: 72px;
       height: 72px;
       object-fit: cover;
       border-radius: 6px;
-      border: 1px solid #dee2e6;
+      border: 1px solid #38404B;
       flex-shrink: 0;
-      background: #f0f0f0;
+      background: #1A1D24;
     }
     .product-img-placeholder {
       width: 72px;
       height: 72px;
       border-radius: 6px;
-      border: 1px solid #dee2e6;
-      background: #f0f0f0;
+      border: 1px solid #38404B;
+      background: #1A1D24;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -90,55 +112,45 @@
     }
     .order-number {
       font-weight: 700;
-      color: #f27a1a;
+      color: #F27A1A;
       font-size: 13px;
     }
     .kalan-sure {
-      color: #16a34a;
+      color: #4ade80; /* Karanlık temada açık yeşil */
       font-size: 11px;
       font-weight: 600;
       margin-top: 4px;
     }
-    .kalan-sure.urgent { color: #dc2626; }
+    .kalan-sure.urgent { color: #f87171; /* Karanlık temada açık kırmızı */ }
     .product-name-link {
-      color: #1d4ed8;
+      color: #FFFFFF;
       font-weight: 600;
       font-size: 12px;
       text-decoration: none;
       line-height: 1.3;
       display: block;
       margin-bottom: 4px;
+      transition: color 0.2s;
     }
-    .product-name-link:hover { text-decoration: underline; }
+    .product-name-link:hover { color: #FF9838; text-decoration: underline; }
     .product-detail {
       font-size: 11px;
-      color: #6b7280;
+      color: #A0AAB5;
       line-height: 1.6;
     }
-    .product-detail span { color: #374151; }
-    .trendyol-express {
-      color: #f27a1a;
-      font-weight: 800;
-      font-size: 13px;
-      letter-spacing: -0.5px;
-    }
+    .product-detail span { color: #FFFFFF; }
     .tracking-no {
       font-family: monospace;
       font-size: 11px;
-      color: #374151;
+      color: #A0AAB5;
       font-weight: 600;
       letter-spacing: 0.5px;
       margin-top: 3px;
     }
     .cargo-sub {
       font-size: 10px;
-      color: #9ca3af;
+      color: #626D7A;
       margin-top: 2px;
-    }
-    .fatura-price {
-      font-weight: 700;
-      font-size: 14px;
-      color: #111827;
     }
     .quantity-badge {
       display: inline-flex;
@@ -146,7 +158,7 @@
       justify-content: center;
       width: 20px;
       height: 20px;
-      background: #f27a1a;
+      background: #F27A1A;
       color: #fff;
       border-radius: 50%;
       font-size: 10px;
@@ -156,35 +168,41 @@
     .filter-btn {
       padding: 4px 10px;
       border-radius: 5px;
-      border: 1px solid #dee2e6;
-      background: #fff;
+      border: 1px solid #38404B;
+      background: #1A1D24;
       cursor: pointer;
       font-size: 11px;
       font-weight: 600;
-      color: #6b7280;
+      color: #A0AAB5;
       transition: all 0.15s;
     }
     .filter-btn.active {
-      background: #f27a1a;
-      border-color: #f27a1a;
-      color: #fff;
+      background: #F27A1A;
+      border-color: #F27A1A;
+      color: #FFFFFF;
     }
     .filter-btn:hover:not(.active) {
-      background: #f9fafb;
-      border-color: #9ca3af;
+      background: #262B35;
+      border-color: #626D7A;
+      color: #FFFFFF;
     }
     .search-input-kargo {
       padding: 7px 12px;
-      border: 1px solid #dee2e6;
+      border: 1px solid #38404B;
       border-radius: 6px;
       font-size: 12px;
       outline: none;
       width: 220px;
-      background: #fff;
-      color: #111;
+      background: #1A1D24;
+      color: #FFFFFF;
+      transition: border-color 0.2s;
     }
-    .search-input-kargo:focus { border-color: #f27a1a; }
+    .search-input-kargo:focus { border-color: #F27A1A; }
     .th-filter-icon { margin-left: 4px; opacity: 0.5; font-size: 10px; }
+    
+    /* Özel Buton Stili (Hover Efektleri) */
+    .btn-primary { background: #F27A1A; color: #FFF; transition: background 0.2s; }
+    .btn-primary:hover:not(:disabled) { background: #FF9838; }
   </style>
 </head>
 <body>
@@ -262,6 +280,7 @@ function generateBarcodeSVG(value, height) {
   return svg.outerHTML;
 }
 
+// ETİKET BÖLÜMÜ DAİMA SİYAH/BEYAZ KALMALIDIR (Yazıcı İçin)
 function LabelHTML({ order, settings, logoDataUrl, orderIndex }) {
   const addr = order.shipmentAddress;
   const fs = settings.fontSize;
@@ -340,19 +359,20 @@ function CargoProviderDisplay({ name }) {
     return (
       <div>
         <div style={{display:"flex",alignItems:"center",gap:3}}>
-          <span style={{color:"#f27a1a",fontWeight:900,fontSize:13,letterSpacing:"-0.5px"}}>trendyol</span>
-          <span style={{background:"#f27a1a",color:"#fff",fontWeight:800,fontSize:9,padding:"1px 5px",borderRadius:3,letterSpacing:"0.5px"}}>express</span>
+          <span style={{color:"#F27A1A",fontWeight:900,fontSize:13,letterSpacing:"-0.5px"}}>trendyol</span>
+          <span style={{background:"#F27A1A",color:"#FFF",fontWeight:800,fontSize:9,padding:"1px 5px",borderRadius:3,letterSpacing:"0.5px"}}>express</span>
         </div>
       </div>
     );
   }
-  if (lower.includes("aras")) return <span style={{fontWeight:700,fontSize:13,color:"#c00"}}>ARAS KARGO</span>;
-  if (lower.includes("yurtiçi")) return <span style={{fontWeight:700,fontSize:13,color:"#003"}}>YURTİÇİ</span>;
-  if (lower.includes("mng")) return <span style={{fontWeight:700,fontSize:13,color:"#e60"}}>MNG KARGO</span>;
-  if (lower.includes("sürat")) return <span style={{fontWeight:700,fontSize:13,color:"#00a"}}>SÜRAT</span>;
-  if (lower.includes("ups")) return <span style={{fontWeight:700,fontSize:13,color:"#4a2"}}>UPS</span>;
-  if (lower.includes("ptt")) return <span style={{fontWeight:700,fontSize:13,color:"#c40"}}>PTT KARGO</span>;
-  return <span style={{fontWeight:700,fontSize:13,color:"#374151"}}>{name}</span>;
+  // Karanlık tema uyumlu kargo firma renkleri
+  if (lower.includes("aras")) return <span style={{fontWeight:700,fontSize:13,color:"#ff6b6b"}}>ARAS KARGO</span>;
+  if (lower.includes("yurtiçi")) return <span style={{fontWeight:700,fontSize:13,color:"#74b9ff"}}>YURTİÇİ</span>;
+  if (lower.includes("mng")) return <span style={{fontWeight:700,fontSize:13,color:"#FF9838"}}>MNG KARGO</span>;
+  if (lower.includes("sürat")) return <span style={{fontWeight:700,fontSize:13,color:"#4facfe"}}>SÜRAT</span>;
+  if (lower.includes("ups")) return <span style={{fontWeight:700,fontSize:13,color:"#2ed573"}}>UPS</span>;
+  if (lower.includes("ptt")) return <span style={{fontWeight:700,fontSize:13,color:"#eccc68"}}>PTT KARGO</span>;
+  return <span style={{fontWeight:700,fontSize:13,color:"#FFFFFF"}}>{name}</span>;
 }
 
 function ProductRow({ line, isFirst }) {
@@ -361,17 +381,17 @@ function ProductRow({ line, isFirst }) {
   const imageUrl = line.productImage || line.images?.[0]?.url || line.imageUrl ||
   (line.contentId ? `https://cdn.dsmcdn.com/ty${Math.floor(line.contentId/1000000)}/product/media/images/prod/PGW/${line.contentId}/images/alternative_0.jpg` : null);
   return (
-    <div style={{display:"flex",gap:10,alignItems:"flex-start",paddingTop:isFirst?"0":"10px",marginTop:isFirst?"0":"10px",borderTop:isFirst?"none":"1px dashed #e5e7eb"}}>
+    <div style={{display:"flex",gap:10,alignItems:"flex-start",paddingTop:isFirst?"0":"10px",marginTop:isFirst?"0":"10px",borderTop:isFirst?"none":"1px dashed #38404B"}}>
       <div style={{flexShrink:0,position:"relative"}}>
         {imageUrl && !imgError
           ? <img src={imageUrl} alt={line.productName} className="product-img" onError={() => setImgError(true)} onClick={() => setEnlarged(true)} style={{cursor:"zoom-in"}}/>
           : <div className="product-img-placeholder">📦</div>
         }
         {enlarged && (
-          <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.5)"}} onClick={() => setEnlarged(false)}>
+          <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)"}} onClick={() => setEnlarged(false)}>
             <div style={{position:"relative"}} onClick={e => e.stopPropagation()}>
-              <img src={imageUrl} alt={line.productName} style={{width:250,height:250,objectFit:"cover",borderRadius:10,border:"2px solid #fff",display:"block"}}/>
-              <button onClick={() => setEnlarged(false)} style={{position:"absolute",top:-10,right:-10,width:24,height:24,borderRadius:"50%",border:"none",background:"#f27a1a",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+              <img src={imageUrl} alt={line.productName} style={{width:250,height:250,objectFit:"cover",borderRadius:10,border:"2px solid #38404B",display:"block"}}/>
+              <button onClick={() => setEnlarged(false)} style={{position:"absolute",top:-10,right:-10,width:24,height:24,borderRadius:"50%",border:"none",background:"#F27A1A",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
             </div>
           </div>
         )}
@@ -416,27 +436,27 @@ function KargoTable({ orders, loading, error }) {
   });
 
   if (loading) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:300,flexDirection:"column",gap:16}}>
-      <div style={{width:40,height:40,border:"3px solid #2d3148",borderTopColor:"#f27a1a",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}></div>
-      <div style={{color:"#64748b",fontSize:13}}>Kargo aşamasındaki siparişler yükleniyor...</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:300,flexDirection:"column",gap:16,background:"#262B35"}}>
+      <div style={{width:40,height:40,border:"3px solid #38404B",borderTopColor:"#F27A1A",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}></div>
+      <div style={{color:"#A0AAB5",fontSize:13}}>Kargo aşamasındaki siparişler yükleniyor...</div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
   if (error) return (
-    <div style={{padding:24,margin:16,background:"#2d1515",borderRadius:8,color:"#f87171",fontSize:13,whiteSpace:"pre-wrap"}}>{error}</div>
+    <div style={{padding:24,margin:16,background:"rgba(248, 113, 113, 0.1)",border:"1px solid #f87171",borderRadius:8,color:"#f87171",fontSize:13,whiteSpace:"pre-wrap"}}>{error}</div>
   );
 
   if (!orders.length) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:300,flexDirection:"column",gap:12}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:300,flexDirection:"column",gap:12,background:"#262B35"}}>
       <div style={{fontSize:48}}>🚚</div>
-      <div style={{color:"#64748b",fontSize:14}}>Kargo aşamasında sipariş bulunamadı</div>
+      <div style={{color:"#A0AAB5",fontSize:14}}>Kargo aşamasında sipariş bulunamadı</div>
     </div>
   );
 
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <div style={{padding:"12px 20px",background:"#13161f",borderBottom:"1px solid #1e2235",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+      <div style={{padding:"12px 20px",background:"#1A1D24",borderBottom:"1px solid #38404B",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <input
           className="search-input-kargo"
           placeholder="🔍 Müşteri, sipariş no veya ürün ara..."
@@ -444,19 +464,19 @@ function KargoTable({ orders, loading, error }) {
           onChange={e => setSearch(e.target.value)}
         />
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"#64748b",marginRight:4}}>Kargo:</span>
+          <span style={{fontSize:11,color:"#A0AAB5",marginRight:4}}>Kargo:</span>
           {cargoProviders.map(c => (
             <button key={c} className={`filter-btn${cargoFilter===c?" active":""}`} onClick={() => setCargoFilter(c)}>{c}</button>
           ))}
         </div>
         <div style={{marginLeft:"auto",display:"flex",gap:16,alignItems:"center"}}>
-          <div style={{fontSize:12,color:"#64748b"}}>
-            <span style={{color:"#e2e8f0",fontWeight:600}}>{filtered.length}</span> / {orders.length} sipariş
+          <div style={{fontSize:12,color:"#A0AAB5"}}>
+            <span style={{color:"#FFFFFF",fontWeight:600}}>{filtered.length}</span> / {orders.length} sipariş
           </div>
         </div>
       </div>
 
-      <div style={{flex:1,overflowY:"auto",overflowX:"auto",background:"#f8fafc"}}>
+      <div style={{flex:1,overflowY:"auto",overflowX:"auto",background:"#1E2229"}}>
         <table className="kargo-table" style={{minWidth:750}}>
           <thead style={{position:"sticky",top:0,zIndex:10}}>
             <tr>
@@ -478,9 +498,9 @@ function KargoTable({ orders, loading, error }) {
                       <span style={{fontSize:16}}>🛍️</span>
                       <span className="order-number">#{order.orderNumber || order.shipmentPackageId}</span>
                     </div>
-                    {order.orderDate && <div style={{fontSize:11,color:"#6b7280",marginBottom:2}}>Sipariş Tarihi: {formatOrderDate(order.orderDate)}</div>}
-                    {order.shipmentPackageId && <div style={{fontSize:11,color:"#6b7280",marginBottom:2}}>Paket No: {order.shipmentPackageId}</div>}
-                    {order.cargoTrackingNumber && <div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>Teslimat No: {order.cargoTrackingNumber}</div>}
+                    {order.orderDate && <div style={{fontSize:11,color:"#A0AAB5",marginBottom:2}}>Sipariş Tarihi: {formatOrderDate(order.orderDate)}</div>}
+                    {order.shipmentPackageId && <div style={{fontSize:11,color:"#A0AAB5",marginBottom:2}}>Paket No: {order.shipmentPackageId}</div>}
+                    {order.cargoTrackingNumber && <div style={{fontSize:11,color:"#A0AAB5",marginBottom:4}}>Teslimat No: {order.cargoTrackingNumber}</div>}
                     {remaining && (
                       <div className={`kalan-sure${remaining.urgent?" urgent":""}`}>
                         Kalan Süre:<br/>{remaining.text}
@@ -490,9 +510,9 @@ function KargoTable({ orders, loading, error }) {
                   <td style={{verticalAlign:"top"}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                       <span style={{color:"#f59e0b",fontSize:14}}>★</span>
-                      <span style={{fontWeight:600,fontSize:13,color:"#111827"}}>{addr.firstName} {addr.lastName}</span>
+                      <span style={{fontWeight:600,fontSize:13,color:"#FFFFFF"}}>{addr.firstName} {addr.lastName}</span>
                     </div>
-                    {addr.city && <div style={{fontSize:11,color:"#6b7280"}}>{addr.district && addr.district + ", "}{addr.city}</div>}
+                    {addr.city && <div style={{fontSize:11,color:"#A0AAB5"}}>{addr.district && addr.district + ", "}{addr.city}</div>}
                   </td>
                   <td style={{verticalAlign:"top"}}>
                     {lines.map((line, i) => (
@@ -596,7 +616,6 @@ function App() {
 
   const toggleSelect = (id) => setSelectedOrders(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
 
-  // DEĞİŞİKLİK 1: Tekil sipariş için onay sorusu eklendi, metin güncellendi
   const togglePrinted = async (id, e) => {
     e.stopPropagation();
     if (!window.confirm("Bu siparişin yazdırıldı işareti kaldırılsın mı?")) return;
@@ -658,7 +677,6 @@ function App() {
     }, 100);
   };
 
-  // DEĞİŞİKLİK 2: confirm metni güncellendi
   const handleClearPrinted = async () => {
     if (window.confirm("Tüm siparişlerin yazdırıldı işareti kaldırılsın mı?")) {
       setPrintedOrders([]);
@@ -669,8 +687,12 @@ function App() {
   const btn = (label, t) => (
     <button onClick={()=>setTab(t)} style={{
       padding:"6px 14px", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:600,
-      background:tab===t?"#f27a1a":"#2d3148", color:tab===t?"#fff":"#94a3b8"
-    }}>{label}</button>
+      background:tab===t?"#F27A1A":"#38404B", color:tab===t?"#FFFFFF":"#A0AAB5",
+      transition: "background 0.2s"
+    }} onMouseEnter={(e) => { if(tab!==t) e.target.style.background = "#626D7A"; }}
+       onMouseLeave={(e) => { if(tab!==t) e.target.style.background = "#38404B"; }}>
+      {label}
+    </button>
   );
 
   const filtered = orders.filter(o => {
@@ -697,21 +719,23 @@ function App() {
   };
 
   return (
-    <div style={{minHeight:"100vh",background:"#0f1117",display:"flex",flexDirection:"column"}}>
+    <div style={{minHeight:"100vh",background:"#1E2229",display:"flex",flexDirection:"column"}}>
       {/* Header */}
-      <div style={{background:"#1a1d27",borderBottom:"1px solid #2d3148",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
-        <div style={{fontWeight:700,fontSize:15,letterSpacing:"0.5px"}}>TRENDYOL KARGO ETİKETİ PANELİ</div>
+      <div style={{background:"#262B35",borderBottom:"1px solid #38404B",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+        <div style={{fontWeight:700,fontSize:15,letterSpacing:"0.5px",color:"#FFFFFF"}}>TRENDYOL KARGO ETİKETİ PANELİ</div>
         <div style={{display:"flex",gap:8}}>
           {btn("📦 Siparişler","orders")}
           {btn("🖨️ Yazdır","print")}
           <button onClick={()=>setTab("kargo")} style={{
             padding:"8px 18px", borderRadius:6, border:"none", cursor:"pointer", fontSize:14, fontWeight:600,
-            background:tab==="kargo"?"#f27a1a":"#2d3148", color:tab==="kargo"?"#fff":"#94a3b8",
-            display:"flex", alignItems:"center", gap:6
-          }}>
+            background:tab==="kargo"?"#F27A1A":"#38404B", color:tab==="kargo"?"#FFFFFF":"#A0AAB5",
+            display:"flex", alignItems:"center", gap:6, transition: "background 0.2s"
+          }}
+          onMouseEnter={(e) => { if(tab!=="kargo") e.target.style.background = "#626D7A"; }}
+          onMouseLeave={(e) => { if(tab!=="kargo") e.target.style.background = "#38404B"; }}>
             🚚 Kargo Aşamasındakiler
             {orders.length > 0 && (
-              <span style={{background:"rgba(255,255,255,0.25)",borderRadius:10,padding:"2px 9px",fontSize:13,fontWeight:700}}>
+              <span style={{background:"rgba(255,255,255,0.25)",borderRadius:10,padding:"2px 9px",fontSize:13,fontWeight:700,color:"#FFF"}}>
                 {orders.length}
               </span>
             )}
@@ -722,24 +746,24 @@ function App() {
       {/* Kargo Aşamasındakiler */}
       {tab === "kargo" && (
         <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <div style={{background:"#13161f",borderBottom:"1px solid #1e2235",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div style={{background:"#1A1D24",borderBottom:"1px solid #38404B",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:18}}>🚚</span>
               <div>
-                <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>Kargo Aşamasındaki Siparişler</div>
-                <div style={{fontSize:11,color:"#64748b",marginTop:1}}>Yeni (Created) statüsündeki siparişler</div>
+                <div style={{fontWeight:700,fontSize:14,color:"#FFFFFF"}}>Kargo Aşamasındaki Siparişler</div>
+                <div style={{fontSize:11,color:"#A0AAB5",marginTop:1}}>Yeni (Created) statüsündeki siparişler</div>
               </div>
             </div>
-            <button onClick={fetchOrdersFromServer} disabled={loading} style={{
+            <button className="btn-primary" onClick={fetchOrdersFromServer} disabled={loading} style={{
               padding:"7px 16px",borderRadius:6,border:"none",cursor:"pointer",
-              background:loading?"#374151":"#f27a1a",color:"#fff",fontWeight:600,fontSize:12,
+              background:loading?"#38404B":"#F27A1A",color:"#fff",fontWeight:600,fontSize:12,
               display:"flex",alignItems:"center",gap:6
             }}>
               {loading ? "⏳ Yükleniyor..." : "🔄 Yenile"}
             </button>
           </div>
           {error && orders.length === 0 ? (
-            <div style={{padding:24,margin:16,background:"#2d1515",borderRadius:8,color:"#f87171",fontSize:13}}>{error}</div>
+            <div style={{padding:24,margin:16,background:"rgba(248, 113, 113, 0.1)",border:"1px solid #f87171",borderRadius:8,color:"#f87171",fontSize:13}}>{error}</div>
           ) : (
             <KargoTable orders={orders} loading={loading} error={""} />
           )}
@@ -749,24 +773,24 @@ function App() {
       {/* Siparişler + Yazdır */}
       {(tab === "orders" || tab === "print") && (
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          <div style={{width:380,background:"#13161f",borderRight:"1px solid #1e2235",overflowY:"auto",flexShrink:0}}>
+          <div style={{width:380,background:"#1A1D24",borderRight:"1px solid #38404B",overflowY:"auto",flexShrink:0}}>
 
             {tab==="orders" && (
-              <div style={{padding:16,borderBottom:"1px solid #1e2235"}}>
+              <div style={{padding:16,borderBottom:"1px solid #38404B"}}>
                 {envLoaded
-                  ? <div style={{padding:"6px 10px",background:"#1a2d1a",borderRadius:6,fontSize:11,color:"#4ade80",marginBottom:8}}>✅ API bilgileri sunucudan yüklendi</div>
-                  : <div style={{padding:"6px 10px",background:"#2d1515",borderRadius:6,fontSize:11,color:"#f87171",marginBottom:8}}>⚠️ API bilgileri yüklenemedi</div>
+                  ? <div style={{padding:"6px 10px",background:"rgba(74, 222, 128, 0.1)",border:"1px solid rgba(74, 222, 128, 0.3)",borderRadius:6,fontSize:11,color:"#4ade80",marginBottom:8}}>✅ API bilgileri sunucudan yüklendi</div>
+                  : <div style={{padding:"6px 10px",background:"rgba(248, 113, 113, 0.1)",border:"1px solid rgba(248, 113, 113, 0.3)",borderRadius:6,fontSize:11,color:"#f87171",marginBottom:8}}>⚠️ API bilgileri yüklenemedi</div>
                 }
                 {printedLoading && (
-                  <div style={{padding:"6px 10px",background:"#1a1d27",borderRadius:6,fontSize:11,color:"#94a3b8",marginBottom:8}}>
+                  <div style={{padding:"6px 10px",background:"#262B35",borderRadius:6,fontSize:11,color:"#A0AAB5",marginBottom:8}}>
                     ⏳ Yazdırma geçmişi yükleniyor...
                   </div>
                 )}
-                <button onClick={fetchOrdersFromServer} disabled={loading} style={{
+                <button className="btn-primary" onClick={fetchOrdersFromServer} disabled={loading} style={{
                   width:"100%",padding:"8px",borderRadius:6,border:"none",cursor:"pointer",
-                  background:loading?"#374151":"#f27a1a",color:"#fff",fontWeight:600,fontSize:12
+                  background:loading?"#38404B":"#F27A1A",color:"#FFFFFF",fontWeight:600,fontSize:12
                 }}>{loading?"Yükleniyor...":"🔄 Siparişleri Getir"}</button>
-                {error && <div style={{marginTop:8,padding:"8px 10px",background:"#2d1515",borderRadius:6,color:"#f87171",fontSize:12,whiteSpace:"pre-wrap"}}>{error}</div>}
+                {error && <div style={{marginTop:8,padding:"8px 10px",background:"rgba(248, 113, 113, 0.1)",borderRadius:6,color:"#f87171",fontSize:12,whiteSpace:"pre-wrap"}}>{error}</div>}
               </div>
             )}
 
@@ -775,18 +799,20 @@ function App() {
                 <input type="text" placeholder="🔍 Müşteri adı veya sipariş no..." value={search}
                   onChange={e=>setSearch(e.target.value)} style={{marginBottom:8}}/>
 
-                <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Kargo Firması</div>
+                <div style={{fontSize:10,color:"#626D7A",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Kargo Firması</div>
                 <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
                   {["Tümü", ...new Set(orders.map(o=>o.cargoProviderName))].map(cargo=>(
                     <button key={cargo} onClick={()=>setCargoFilter(cargo)} style={{
-                      padding:"3px 8px",borderRadius:4,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,
-                      background:cargoFilter===cargo?"#f27a1a":"#2d3148",
-                      color:cargoFilter===cargo?"#fff":"#94a3b8"
+                      padding:"3px 8px",borderRadius:4,border:"1px solid",cursor:"pointer",fontSize:10,fontWeight:600,
+                      borderColor:cargoFilter===cargo?"#F27A1A":"#38404B",
+                      background:cargoFilter===cargo?"#F27A1A":"#262B35",
+                      color:cargoFilter===cargo?"#FFFFFF":"#A0AAB5",
+                      transition: "all 0.2s"
                     }}>{cargo}</button>
                   ))}
                 </div>
 
-                <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Baskı Durumu</div>
+                <div style={{fontSize:10,color:"#626D7A",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Baskı Durumu</div>
                 <div style={{display:"flex",gap:4,marginBottom:10}}>
                   {[
                     {label:"Tümü", value:"Tümü"},
@@ -794,27 +820,26 @@ function App() {
                     {label:`Yazdırıldı (${printedCount})`, value:"Yazdırıldı"},
                   ].map(opt=>(
                     <button key={opt.value} onClick={()=>setPrintFilter(opt.value)} style={{
-                      padding:"3px 8px",borderRadius:4,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,
-                      background:printFilter===opt.value
-                        ? (opt.value==="Yazdırıldı"?"#6366f1":opt.value==="Yazdırılmadı"?"#16a34a":"#f27a1a")
-                        :"#2d3148",
-                      color:printFilter===opt.value?"#fff":"#94a3b8"
+                      padding:"3px 8px",borderRadius:4,border:"1px solid",cursor:"pointer",fontSize:10,fontWeight:600,
+                      borderColor:printFilter===opt.value?"#F27A1A":"#38404B",
+                      background:printFilter===opt.value?"#F27A1A":"#262B35",
+                      color:printFilter===opt.value?"#FFFFFF":"#A0AAB5",
+                      transition: "all 0.2s"
                     }}>{opt.label}</button>
                   ))}
                 </div>
 
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                  <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase"}}>{filtered.length} / {orders.length} Sipariş</div>
+                  <div style={{fontSize:11,color:"#A0AAB5",textTransform:"uppercase"}}>{filtered.length} / {orders.length} Sipariş</div>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <button onClick={handleSelectAll}
-                      style={{fontSize:11,color:allFilteredSelected?"#f87171":"#f27a1a",background:"none",border:"none",cursor:"pointer"}}>
+                      style={{fontSize:11,color:allFilteredSelected?"#FF9838":"#F27A1A",background:"none",border:"none",cursor:"pointer"}}>
                       {allFilteredSelected ? "Seçimi Kaldır" : "Tümünü Seç"}
                     </button>
-                    {/* DEĞİŞİKLİK 3: Buton metni güncellendi */}
                     {printedOrders.length > 0 && (
                       <button onClick={handleClearPrinted}
-                        style={{fontSize:11,color:"#f87171",background:"none",border:"none",cursor:"pointer"}}>
-                        🗑️ Yazdırıldı işaretini kaldır
+                        style={{fontSize:11,color:"#A0AAB5",background:"none",border:"none",cursor:"pointer"}}>
+                        🗑️ İşareti kaldır
                       </button>
                     )}
                   </div>
@@ -828,29 +853,29 @@ function App() {
                       <div key={order.shipmentPackageId}
                         onClick={()=>{ toggleSelect(order.shipmentPackageId); setCurrentPreview(order); }}
                         style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",
-                          background:sel?"#1e2d1a":printed?"#1a1a2e":"#1a1d27",
-                          border:`1px solid ${sel?"#4ade80":printed?"#6366f1":"#2d3148"}`,
-                          opacity:printed?0.75:1}}>
+                          background:sel?"rgba(242, 122, 26, 0.1)":printed?"#1A1D24":"#262B35",
+                          border:`1px solid ${sel?"#FF9838":printed?"#38404B":"#38404B"}`,
+                          opacity:printed?0.7:1,
+                          transition:"border-color 0.2s, background 0.2s"}}>
                         <div style={{display:"flex",justifyContent:"space-between"}}>
                           <div>
-                            <div style={{fontWeight:600,fontSize:13}}>{order.shipmentAddress.firstName} {order.shipmentAddress.lastName}</div>
-                            <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{order.orderNumber}</div>
-                            <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{order.shipmentAddress.district}, {order.shipmentAddress.city}</div>
+                            <div style={{fontWeight:600,fontSize:13,color:"#FFFFFF"}}>{order.shipmentAddress.firstName} {order.shipmentAddress.lastName}</div>
+                            <div style={{fontSize:11,color:"#A0AAB5",marginTop:2}}>{order.orderNumber}</div>
+                            <div style={{fontSize:11,color:"#A0AAB5",marginTop:2}}>{order.shipmentAddress.district}, {order.shipmentAddress.city}</div>
                           </div>
                           <div style={{textAlign:"right"}}>
-                            <span style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"#1e2235",color:"#f27a1a",fontWeight:600}}>{order.cargoProviderName}</span>
-                            <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{order.lines.length} ürün</div>
+                            <span style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"#1A1D24",border:"1px solid #38404B",color:"#F27A1A",fontWeight:600}}>{order.cargoProviderName}</span>
+                            <div style={{fontSize:11,color:"#A0AAB5",marginTop:4}}>{order.lines.length} ürün</div>
                           </div>
                         </div>
                         <div style={{marginTop:4,display:"flex",gap:6,alignItems:"center"}}>
-                          {sel && <span style={{fontSize:10,color:"#4ade80",fontWeight:600}}>✓ Seçildi</span>}
-                          {/* DEĞİŞİKLİK 4: Sipariş kartındaki etiket metni güncellendi */}
+                          {sel && <span style={{fontSize:10,color:"#FF9838",fontWeight:600}}>✓ Seçildi</span>}
                           {printed && (
                             <span
                               onClick={(e) => togglePrinted(order.shipmentPackageId, e)}
                               title="Yazdırıldı işaretini kaldır"
-                              style={{fontSize:10,color:"#818cf8",fontWeight:600,cursor:"pointer",
-                                borderBottom:"1px dashed #818cf8",lineHeight:1.2}}>
+                              style={{fontSize:10,color:"#A0AAB5",fontWeight:600,cursor:"pointer",
+                                borderBottom:"1px dashed #A0AAB5",lineHeight:1.2}}>
                               🖨️ Yazdırıldı işaretini kaldır
                             </span>
                           )}
@@ -864,32 +889,34 @@ function App() {
 
             {tab==="print" && (
               <div style={{padding:16}}>
-                <div style={{padding:12,background:"#1a1d27",borderRadius:8,border:"1px solid #2d3148",marginBottom:12}}>
-                  <div style={{fontSize:13,fontWeight:600}}>{selectedOrders.length} etiket seçildi</div>
-                  <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Boyut: {settings.labelWidth}×{settings.labelHeight}mm</div>
+                <div style={{padding:12,background:"#262B35",borderRadius:8,border:"1px solid #38404B",marginBottom:12}}>
+                  <div style={{fontSize:13,fontWeight:600,color:"#FFFFFF"}}>{selectedOrders.length} etiket seçildi</div>
+                  <div style={{fontSize:11,color:"#A0AAB5",marginTop:4}}>Boyut: {settings.labelWidth}×{settings.labelHeight}mm</div>
                 </div>
-                <button onClick={handlePrint} style={{
+                <button className="btn-primary" onClick={handlePrint} style={{
                   width:"100%",padding:12,borderRadius:8,border:"none",cursor:"pointer",
-                  background:selectedOrders.length?"#f27a1a":"#374151",color:"#fff",fontWeight:700,fontSize:14,marginBottom:12
+                  background:selectedOrders.length?"#F27A1A":"#38404B",color:"#FFFFFF",fontWeight:700,fontSize:14,marginBottom:12
                 }}>🖨️ Yazdır</button>
-                <div style={{fontSize:11,color:"#64748b",lineHeight:1.8,marginBottom:16}}>
-                  <strong style={{color:"#94a3b8"}}>Termal yazıcı için:</strong><br/>
-                  Sayfa boyutu: <strong style={{color:"#94a3b8"}}>özel → {settings.labelWidth}×{settings.labelHeight}mm</strong><br/>
-                  Kenar boşlukları: <strong style={{color:"#94a3b8"}}>sıfır</strong>
+                <div style={{fontSize:11,color:"#626D7A",lineHeight:1.8,marginBottom:16}}>
+                  <strong style={{color:"#A0AAB5"}}>Termal yazıcı için:</strong><br/>
+                  Sayfa boyutu: <strong style={{color:"#A0AAB5"}}>özel → {settings.labelWidth}×{settings.labelHeight}mm</strong><br/>
+                  Kenar boşlukları: <strong style={{color:"#A0AAB5"}}>sıfır</strong>
                 </div>
 
-                <div style={{borderTop:"1px solid #2d3148",paddingTop:14,marginBottom:8}}>
-                  <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"1px",marginBottom:12}}>⚙️ Etiket Şablonu</div>
+                <div style={{borderTop:"1px solid #38404B",paddingTop:14,marginBottom:8}}>
+                  <div style={{fontSize:11,color:"#A0AAB5",textTransform:"uppercase",letterSpacing:"1px",marginBottom:12}}>⚙️ Etiket Şablonu</div>
                   <div style={{display:"grid",gap:10}}>
                     <div>
-                      <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Mağaza Logosu</div>
+                      <div style={{fontSize:11,color:"#A0AAB5",marginBottom:6}}>Mağaza Logosu</div>
                       <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} style={{display:"none"}}/>
                       <button onClick={()=>logoInputRef.current.click()} style={{
-                        width:"100%",padding:"8px",borderRadius:6,border:"1px dashed #2d3148",
-                        background:"#1a1d27",color:"#94a3b8",cursor:"pointer",fontSize:12
-                      }}>{logoDataUrl?"✅ Logo yüklendi — değiştir":"📁 Logo dosyası seç"}</button>
+                        width:"100%",padding:"8px",borderRadius:6,border:"1px dashed #38404B",
+                        background:"#1A1D24",color:"#A0AAB5",cursor:"pointer",fontSize:12, transition:"background 0.2s"
+                      }} onMouseEnter={(e)=>e.target.style.background="#262B35"} onMouseLeave={(e)=>e.target.style.background="#1A1D24"}>
+                        {logoDataUrl?"✅ Logo yüklendi — değiştir":"📁 Logo dosyası seç"}
+                      </button>
                       {logoDataUrl && (
-                        <div style={{marginTop:8,textAlign:"center",background:"#1a1d27",borderRadius:6,padding:8}}>
+                        <div style={{marginTop:8,textAlign:"center",background:"#1A1D24",borderRadius:6,padding:8, border:"1px solid #38404B"}}>
                           <img src={logoDataUrl} alt="önizleme" style={{maxHeight:40,maxWidth:"100%",objectFit:"contain"}}/>
                         </div>
                       )}
@@ -901,12 +928,12 @@ function App() {
                       ["fontSize","Yazı Boyutu (pt)","number"],
                     ].map(([key,label,type])=>(
                       <div key={key}>
-                        <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{label}</div>
+                        <div style={{fontSize:11,color:"#A0AAB5",marginBottom:4}}>{label}</div>
                         <input type={type} value={settings[key]}
                           onChange={e=>setSettings(p=>({...p,[key]:type==="number"?Number(e.target.value):e.target.value}))}/>
                       </div>
                     ))}
-                    <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#94a3b8",cursor:"pointer"}}>
+                    <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#A0AAB5",cursor:"pointer"}}>
                       <input type="checkbox" checked={settings.showProducts} onChange={e=>setSettings(p=>({...p,showProducts:e.target.checked}))}/>
                       Ürün listesini göster
                     </label>
@@ -914,26 +941,28 @@ function App() {
                 </div>
 
                 {printedOrders.length > 0 && (
-                  <div style={{marginTop:16,padding:"10px 12px",background:"#1a1a2e",borderRadius:8,border:"1px solid #6366f1"}}>
-                    <div style={{fontSize:12,color:"#818cf8",fontWeight:600}}>🖨️ {printedOrders.length} sipariş yazdırıldı</div>
-                    <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Bu bilgi sunucuda kalıcı olarak saklanır.</div>
-                    {/* DEĞİŞİKLİK 5: Yazdır sekmesindeki buton metni güncellendi */}
+                  <div style={{marginTop:16,padding:"10px 12px",background:"#1A1D24",borderRadius:8,border:"1px solid #38404B"}}>
+                    <div style={{fontSize:12,color:"#A0AAB5",fontWeight:600}}>🖨️ {printedOrders.length} sipariş yazdırıldı</div>
+                    <div style={{fontSize:11,color:"#626D7A",marginTop:4}}>Bu bilgi sunucuda kalıcı olarak saklanır.</div>
                     <button onClick={handleClearPrinted} style={{
-                      marginTop:8,padding:"5px 10px",borderRadius:5,border:"1px solid #6366f1",
-                      background:"none",color:"#f87171",cursor:"pointer",fontSize:11
-                    }}>Yazdırıldı işaretini kaldır</button>
+                      marginTop:8,padding:"5px 10px",borderRadius:5,border:"1px solid #38404B",
+                      background:"#262B35",color:"#A0AAB5",cursor:"pointer",fontSize:11, transition:"background 0.2s"
+                    }} onMouseEnter={(e)=>e.target.style.background="#38404B"} onMouseLeave={(e)=>e.target.style.background="#262B35"}>
+                      Yazdırıldı işaretini kaldır
+                    </button>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          <div style={{flex:1,overflowY:"auto",background:"#0d1018",display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 24px"}}>
-            <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"1px",marginBottom:20}}>
+          {/* Etiket Önizleme */}
+          <div style={{flex:1,overflowY:"auto",background:"#1E2229",display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 24px"}}>
+            <div style={{fontSize:11,color:"#626D7A",textTransform:"uppercase",letterSpacing:"1px",marginBottom:20}}>
               {currentPreview?"Etiket Önizleme":"Bir sipariş seçin"}
             </div>
             {currentPreview
-              ? <div style={{boxShadow:"0 8px 40px rgba(0,0,0,0.5)"}}>
+              ? <div style={{boxShadow:"0 8px 40px rgba(0,0,0,0.6)"}}>
                   <LabelHTML
                     order={currentPreview}
                     settings={settings}
@@ -941,7 +970,7 @@ function App() {
                     orderIndex={getOrderIndex(currentPreview)}
                   />
                 </div>
-              : <div style={{textAlign:"center",color:"#334155",marginTop:60}}><div style={{fontSize:48}}>📦</div><div style={{marginTop:12,fontSize:14}}>Önizleme için siparişe tıklayın</div></div>
+              : <div style={{textAlign:"center",color:"#626D7A",marginTop:60}}><div style={{fontSize:48}}>📦</div><div style={{marginTop:12,fontSize:14}}>Önizleme için siparişe tıklayın</div></div>
             }
           </div>
         </div>
