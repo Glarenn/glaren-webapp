@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* Tekrar eden input/button stillerini Tailwind componentine çevirdik */
+  .input-field {
+    @apply w-full px-3 py-2 rounded-md border border-brand-border bg-brand-input text-brand-textMain text-xs focus:outline-none focus:border-brand-primary transition-colors;
+  }
+  .btn-primary {
+    @apply bg-brand-primary text-white font-semibold py-2 px-4 rounded-md hover:bg-brand-primaryHover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2;
+  }
+  .btn-secondary {
+    @apply bg-brand-border text-brand-textMain font-semibold py-2 px-4 rounded-md hover:bg-brand-textPlaceholder transition-colors flex items-center justify-center gap-2;
+  }
+}
+
+@media print {
+  /* Print modunda arka plan rengi ve ekstra stilleri temizler */
+  @page { margin: 0; }
+  body { background: white !important; }
+  .page-break { page-break-after: always; page-break-inside: avoid; }
+  .page-break:last-child { page-break-after: auto; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1A1D24; }
+::-webkit-scrollbar-thumb { background: #38404B; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #626D7A; }
