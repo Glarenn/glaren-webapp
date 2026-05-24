@@ -400,7 +400,7 @@ function ProductRow({ line, isFirst }) {
           <a href="#" className="product-name-link" title={line.productName}>{line.productName}</a>
         </div>
         <div className="product-detail">
-          {line.merchantSku && <div>Stok Kodu: <span>{line.merchantSku}</span></div>}
+
           {(line.productColor || line.attributes?.find(a=>a.name==="Renk")?.value) &&
             <div>Renk: <span>{line.productColor || line.attributes?.find(a=>a.name==="Renk")?.value}</span></div>
           }
@@ -497,8 +497,7 @@ function KargoTable({ orders, loading, error }) {
                       <span className="order-number">#{order.orderNumber || order.shipmentPackageId}</span>
                     </div>
                     {order.orderDate && <div style={{fontSize:11,color:"#6b7280",marginBottom:2}}>Sipariş Tarihi: {formatOrderDate(order.orderDate)}</div>}
-                    {order.shipmentPackageId && <div style={{fontSize:11,color:"#6b7280",marginBottom:2}}>Paket No: {order.shipmentPackageId}</div>}
-                    {order.cargoTrackingNumber && <div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>Teslimat No: {order.cargoTrackingNumber}</div>}
+
                     {remaining && (
                       <div className={`kalan-sure${remaining.urgent?" urgent":""}`}>
                         Kalan Süre:<br/>{remaining.text}
@@ -522,7 +521,7 @@ function KargoTable({ orders, loading, error }) {
                     {order.cargoTrackingNumber && (
                       <div className="tracking-no">{order.cargoTrackingNumber}</div>
                     )}
-                    <div className="cargo-sub">Trendyol anlaşmalı kargo</div>
+
                   </td>
                 </tr>
               );
@@ -734,7 +733,7 @@ function App() {
               background:loading?"#374151":"#f27a1a",color:"#fff",fontWeight:600,fontSize:12,
               display:"flex",alignItems:"center",gap:6
             }}>
-              {loading ? "⏳ Yükleniyor..." : "🔄 Yenile"}
+              {loading ? "⏳ Yükleniyor..." : "🔄 Yeni siparişleri getir"}
             </button>
           </div>
           {error && orders.length === 0 ? (
