@@ -325,57 +325,10 @@ function formatOrderDate(dateMs) {
   return d.toLocaleString("tr-TR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
 }
 
-// SVG logolar — inline, dış bağımlılık yok
-const CARGO_LOGOS = {
-  trendyol: (h=28) => (
-    <svg height={h} viewBox="0 0 200 48" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-      <rect width="200" height="48" rx="6" fill="#F27A1A"/>
-      <text x="10" y="34" fontFamily="Arial Black,Arial" fontWeight="900" fontSize="26" fill="#fff" letterSpacing="-1">trendyol</text>
-      <rect x="148" y="10" width="44" height="18" rx="4" fill="#fff" opacity="0.25"/>
-      <text x="152" y="23" fontFamily="Arial" fontWeight="800" fontSize="10" fill="#fff" letterSpacing="0.5">express</text>
-    </svg>
-  ),
-  aras: (h=28) => (
-    <svg height={h} viewBox="0 0 160 48" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-      <rect width="160" height="48" rx="6" fill="#CC0000"/>
-      <text x="12" y="34" fontFamily="Arial Black,Arial" fontWeight="900" fontSize="24" fill="#fff" letterSpacing="0.5">ARAS</text>
-      <text x="88" y="34" fontFamily="Arial" fontWeight="700" fontSize="14" fill="#ffcccc">KARGO</text>
-    </svg>
-  ),
-  yurtici: (h=28) => (
-    <svg height={h} viewBox="0 0 180 48" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-      <rect width="180" height="48" rx="6" fill="#003087"/>
-      <text x="10" y="34" fontFamily="Arial Black,Arial" fontWeight="900" fontSize="20" fill="#fff">YURTİÇİ</text>
-      <text x="120" y="34" fontFamily="Arial" fontWeight="700" fontSize="13" fill="#aac0e8">KARGO</text>
-    </svg>
-  ),
-  mng: (h=28) => (
-    <svg height={h} viewBox="0 0 150 48" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-      <rect width="150" height="48" rx="6" fill="#EE6600"/>
-      <text x="10" y="34" fontFamily="Arial Black,Arial" fontWeight="900" fontSize="24" fill="#fff">MNG</text>
-      <text x="78" y="34" fontFamily="Arial" fontWeight="700" fontSize="14" fill="#ffe0c0">KARGO</text>
-    </svg>
-  ),
-  surat: (h=28) => (
-    <svg height={h} viewBox="0 0 160 48" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-      <rect width="160" height="48" rx="6" fill="#0033AA"/>
-      <text x="10" y="34" fontFamily="Arial Black,Arial" fontWeight="900" fontSize="22" fill="#fff">SÜRAT</text>
-      <text x="105" y="34" fontFamily="Arial" fontWeight="700" fontSize="13" fill="#aabfe8">KARGO</text>
-    </svg>
-  ),
-  ups: (h=28) => (
-    <svg height={h} viewBox="0 0 100 48" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-      <rect width="100" height="48" rx="6" fill="#301506"/>
-      <text x="14" y="34" fontFamily="Arial Black,Arial" fontWeight="900" fontSize="28" fill="#FFB500">UPS</text>
-    </svg>
-  ),
-  ptt: (h=28) => (
-    <svg height={h} viewBox="0 0 150 48" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-      <rect width="150" height="48" rx="6" fill="#CC4400"/>
-      <text x="10" y="34" fontFamily="Arial Black,Arial" fontWeight="900" fontSize="24" fill="#fff">PTT</text>
-      <text x="72" y="34" fontFamily="Arial" fontWeight="700" fontSize="14" fill="#ffd0b0">KARGO</text>
-    </svg>
-  ),
+// Kargo logo dosya yolları
+const CARGO_IMG = {
+  trendyol: "/trendyolexpress.png",
+  aras: "/araskargo.png",
 };
 
 function getCargoKey(name) {
@@ -395,8 +348,10 @@ function getCargoKey(name) {
 function CargoProviderDisplay({ name }) {
   if (!name) return null;
   const key = getCargoKey(name);
-  if (key && CARGO_LOGOS[key]) return <div>{CARGO_LOGOS[key](28)}</div>;
-  return <span style={{fontWeight:700,fontSize:13,color:"#374151"}}>{name}</span>;
+  if (key && CARGO_IMG[key]) {
+    return <img src={CARGO_IMG[key]} alt={name} style={{height:28,objectFit:"contain",display:"block"}}/>;
+  }
+  return <span style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{name}</span>;
 }
 
 // Filtre butonu ve sipariş kartı badge'inde kullanılan küçük logo
@@ -404,7 +359,9 @@ function CargoLogoBadge({ name, small }) {
   if (!name) return null;
   const key = getCargoKey(name);
   const h = small ? 20 : 24;
-  if (key && CARGO_LOGOS[key]) return <div style={{display:"inline-block",lineHeight:0}}>{CARGO_LOGOS[key](h)}</div>;
+  if (key && CARGO_IMG[key]) {
+    return <img src={CARGO_IMG[key]} alt={name} style={{height:h,objectFit:"contain",display:"block"}}/>;
+  }
   return <span style={{fontWeight:700,fontSize:10,color:"#f27a1a"}}>{name}</span>;
 }
 
