@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Trendyol Kargo Etiketi</title>
+  <title>Glaren Panel</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -219,14 +219,6 @@ async function savePrintedToServer(ids) {
   }
 }
 
-async function removePrintedFromServer(id) {
-  try {
-    await fetch(`api/printed/${id}`, { method: "DELETE" });
-  } catch (e) {
-    console.error("Yazdırma işareti kaldırılamadı:", e);
-  }
-}
-
 // ===================== YARDIMCI FONKSİYONLAR =====================
 
 function sortOrders(list) {
@@ -262,7 +254,7 @@ function generateBarcodeSVG(value, height) {
   return svg.outerHTML;
 }
 
-function LabelHTML({ order, settings, logoDataUrl, orderIndex }) {
+function LabelHTML({ order, settings, logoDataUrl }) {
   const addr = order.shipmentAddress;
   const fs = settings.fontSize;
   const labelW = Number(settings.labelWidth);
@@ -519,7 +511,7 @@ function KargoTable({ orders, loading, error }) {
 /* ===================== ANA UYGULAMA ===================== */
 
 function App() {
-  const [tab, setTab] = useState("orders");
+  const [tab, setTab] = useState("etiketler");
   const [envLoaded, setEnvLoaded] = useState(false);
 
   const [orders, setOrders] = useState([]);
@@ -529,7 +521,6 @@ function App() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [currentPreview, setCurrentPreview] = useState(null);
   const [search, setSearch] = useState("");
   const [cargoFilter, setCargoFilter] = useState("Tümü");
   const [printFilter, setPrintFilter] = useState("Tümü");
@@ -596,15 +587,6 @@ function App() {
 
   const toggleSelect = (id) => setSelectedOrders(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
 
-  // DEĞİŞİKLİK 1: Tekil sipariş için onay sorusu eklendi, metin güncellendi
-  const togglePrinted = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm("Bu siparişin yazdırıldı işareti kaldırılsın mı?")) return;
-    const updated = printedOrders.filter(x => x !== id);
-    setPrintedOrders(updated);
-    await removePrintedFromServer(id);
-  };
-
   const getOrderIndex = (order) => orders.indexOf(order) + 1;
 
   const handlePrint = async () => {
@@ -658,14 +640,6 @@ function App() {
     }, 100);
   };
 
-  // DEĞİŞİKLİK 2: confirm metni güncellendi
-  const handleClearPrinted = async () => {
-    if (window.confirm("Tüm siparişlerin yazdırıldı işareti kaldırılsın mı?")) {
-      setPrintedOrders([]);
-      await savePrintedToServer([]);
-    }
-  };
-
   const btn = (label, t) => (
     <button onClick={()=>setTab(t)} style={{
       padding:"6px 14px", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:600,
@@ -700,10 +674,9 @@ function App() {
     <div style={{minHeight:"100vh",background:"#0f1117",display:"flex",flexDirection:"column"}}>
       {/* Header */}
       <div style={{background:"#1a1d27",borderBottom:"1px solid #2d3148",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
-        <div style={{fontWeight:700,fontSize:15,letterSpacing:"0.5px"}}>TRENDYOL KARGO ETİKETİ PANELİ</div>
+        <div style={{fontWeight:700,fontSize:15,letterSpacing:"0.5px"}}>Glaren Panel</div>
         <div style={{display:"flex",gap:8}}>
-          {btn("📦 Siparişler","orders")}
-          {btn("🖨️ Yazdır","print")}
+          {btn("🏷️ Etiketler","etiketler")}
           <button onClick={()=>setTab("kargo")} style={{
             padding:"8px 18px", borderRadius:6, border:"none", cursor:"pointer", fontSize:14, fontWeight:600,
             background:tab==="kargo"?"#f27a1a":"#2d3148", color:tab==="kargo"?"#fff":"#94a3b8",
@@ -746,203 +719,143 @@ function App() {
         </div>
       )}
 
-      {/* Siparişler + Yazdır */}
-      {(tab === "orders" || tab === "print") && (
+      {/* Etiketler — Sol: Sipariş listesi, Sağ: Yazdır paneli */}
+      {tab === "etiketler" && (
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          <div style={{width:380,background:"#13161f",borderRight:"1px solid #1e2235",overflowY:"auto",flexShrink:0}}>
 
-            {tab==="orders" && (
-              <div style={{padding:16,borderBottom:"1px solid #1e2235"}}>
-                {envLoaded
-                  ? <div style={{padding:"6px 10px",background:"#1a2d1a",borderRadius:6,fontSize:11,color:"#4ade80",marginBottom:8}}>✅ API bilgileri sunucudan yüklendi</div>
-                  : <div style={{padding:"6px 10px",background:"#2d1515",borderRadius:6,fontSize:11,color:"#f87171",marginBottom:8}}>⚠️ API bilgileri yüklenemedi</div>
-                }
-                {printedLoading && (
-                  <div style={{padding:"6px 10px",background:"#1a1d27",borderRadius:6,fontSize:11,color:"#94a3b8",marginBottom:8}}>
-                    ⏳ Yazdırma geçmişi yükleniyor...
-                  </div>
-                )}
-                <button onClick={fetchOrdersFromServer} disabled={loading} style={{
-                  width:"100%",padding:"8px",borderRadius:6,border:"none",cursor:"pointer",
-                  background:loading?"#374151":"#f27a1a",color:"#fff",fontWeight:600,fontSize:12
-                }}>{loading?"Yükleniyor...":"🔄 Siparişleri Getir"}</button>
-                {error && <div style={{marginTop:8,padding:"8px 10px",background:"#2d1515",borderRadius:6,color:"#f87171",fontSize:12,whiteSpace:"pre-wrap"}}>{error}</div>}
+          {/* SOL PANEL: Sipariş listesi */}
+          <div style={{width:380,background:"#13161f",borderRight:"1px solid #1e2235",overflowY:"auto",flexShrink:0,display:"flex",flexDirection:"column"}}>
+            <div style={{padding:16,borderBottom:"1px solid #1e2235"}}>
+              <button onClick={fetchOrdersFromServer} disabled={loading} style={{
+                width:"100%",padding:"8px",borderRadius:6,border:"none",cursor:"pointer",
+                background:loading?"#374151":"#f27a1a",color:"#fff",fontWeight:600,fontSize:12
+              }}>{loading?"⏳ Yükleniyor...":"🔄 Yeni Siparişleri Getir"}</button>
+              {error && <div style={{marginTop:8,padding:"8px 10px",background:"#2d1515",borderRadius:6,color:"#f87171",fontSize:12,whiteSpace:"pre-wrap"}}>{error}</div>}
+            </div>
+
+            <div style={{padding:"12px 16px",flex:1,overflowY:"auto"}}>
+              <input type="text" placeholder="🔍 Müşteri adı veya sipariş no..." value={search}
+                onChange={e=>setSearch(e.target.value)} style={{marginBottom:8}}/>
+
+              <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Kargo Firması</div>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
+                {["Tümü", ...new Set(orders.map(o=>o.cargoProviderName))].map(cargo=>(
+                  <button key={cargo} onClick={()=>setCargoFilter(cargo)} style={{
+                    padding:"3px 8px",borderRadius:4,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,
+                    background:cargoFilter===cargo?"#f27a1a":"#2d3148",
+                    color:cargoFilter===cargo?"#fff":"#94a3b8"
+                  }}>{cargo}</button>
+                ))}
               </div>
-            )}
 
-            {tab==="orders" && (
-              <div style={{padding:"12px 16px"}}>
-                <input type="text" placeholder="🔍 Müşteri adı veya sipariş no..." value={search}
-                  onChange={e=>setSearch(e.target.value)} style={{marginBottom:8}}/>
+              <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Baskı Durumu</div>
+              <div style={{display:"flex",gap:4,marginBottom:10}}>
+                {[
+                  {label:"Tümü", value:"Tümü"},
+                  {label:`Yazdırılmadı (${notPrintedCount})`, value:"Yazdırılmadı"},
+                  {label:`Yazdırıldı (${printedCount})`, value:"Yazdırıldı"},
+                ].map(opt=>(
+                  <button key={opt.value} onClick={()=>setPrintFilter(opt.value)} style={{
+                    padding:"3px 8px",borderRadius:4,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,
+                    background:printFilter===opt.value
+                      ? (opt.value==="Yazdırıldı"?"#6366f1":opt.value==="Yazdırılmadı"?"#16a34a":"#f27a1a")
+                      :"#2d3148",
+                    color:printFilter===opt.value?"#fff":"#94a3b8"
+                  }}>{opt.label}</button>
+                ))}
+              </div>
 
-                <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Kargo Firması</div>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
-                  {["Tümü", ...new Set(orders.map(o=>o.cargoProviderName))].map(cargo=>(
-                    <button key={cargo} onClick={()=>setCargoFilter(cargo)} style={{
-                      padding:"3px 8px",borderRadius:4,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,
-                      background:cargoFilter===cargo?"#f27a1a":"#2d3148",
-                      color:cargoFilter===cargo?"#fff":"#94a3b8"
-                    }}>{cargo}</button>
-                  ))}
-                </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase"}}>{filtered.length} / {orders.length} Sipariş</div>
+                <button onClick={handleSelectAll}
+                  style={{fontSize:11,color:allFilteredSelected?"#f87171":"#f27a1a",background:"none",border:"none",cursor:"pointer"}}>
+                  {allFilteredSelected ? "Seçimi Kaldır" : "Tümünü Seç"}
+                </button>
+              </div>
 
-                <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Baskı Durumu</div>
-                <div style={{display:"flex",gap:4,marginBottom:10}}>
-                  {[
-                    {label:"Tümü", value:"Tümü"},
-                    {label:`Yazdırılmadı (${notPrintedCount})`, value:"Yazdırılmadı"},
-                    {label:`Yazdırıldı (${printedCount})`, value:"Yazdırıldı"},
-                  ].map(opt=>(
-                    <button key={opt.value} onClick={()=>setPrintFilter(opt.value)} style={{
-                      padding:"3px 8px",borderRadius:4,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,
-                      background:printFilter===opt.value
-                        ? (opt.value==="Yazdırıldı"?"#6366f1":opt.value==="Yazdırılmadı"?"#16a34a":"#f27a1a")
-                        :"#2d3148",
-                      color:printFilter===opt.value?"#fff":"#94a3b8"
-                    }}>{opt.label}</button>
-                  ))}
-                </div>
-
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                  <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase"}}>{filtered.length} / {orders.length} Sipariş</div>
-                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <button onClick={handleSelectAll}
-                      style={{fontSize:11,color:allFilteredSelected?"#f87171":"#f27a1a",background:"none",border:"none",cursor:"pointer"}}>
-                      {allFilteredSelected ? "Seçimi Kaldır" : "Tümünü Seç"}
-                    </button>
-                    {/* DEĞİŞİKLİK 3: Buton metni güncellendi */}
-                    {printedOrders.length > 0 && (
-                      <button onClick={handleClearPrinted}
-                        style={{fontSize:11,color:"#f87171",background:"none",border:"none",cursor:"pointer"}}>
-                        🗑️ Yazdırıldı işaretini kaldır
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  {filtered.map(order => {
-                    const sel = selectedOrders.includes(order.shipmentPackageId);
-                    const printed = printedOrders.includes(order.shipmentPackageId);
-                    return (
-                      <div key={order.shipmentPackageId}
-                        onClick={()=>{ toggleSelect(order.shipmentPackageId); setCurrentPreview(order); }}
-                        style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",
-                          background:sel?"#1e2d1a":printed?"#1a1a2e":"#1a1d27",
-                          border:`1px solid ${sel?"#4ade80":printed?"#6366f1":"#2d3148"}`,
-                          opacity:printed?0.75:1}}>
-                        <div style={{display:"flex",justifyContent:"space-between"}}>
-                          <div>
-                            <div style={{fontWeight:600,fontSize:13}}>{order.shipmentAddress.firstName} {order.shipmentAddress.lastName}</div>
-                            <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{order.orderNumber}</div>
-                            <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{order.shipmentAddress.district}, {order.shipmentAddress.city}</div>
-                          </div>
-                          <div style={{textAlign:"right"}}>
-                            <span style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"#1e2235",color:"#f27a1a",fontWeight:600}}>{order.cargoProviderName}</span>
-                            <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{order.lines.length} ürün</div>
-                          </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {filtered.map(order => {
+                  const sel = selectedOrders.includes(order.shipmentPackageId);
+                  const printed = printedOrders.includes(order.shipmentPackageId);
+                  return (
+                    <div key={order.shipmentPackageId}
+                      onClick={()=>toggleSelect(order.shipmentPackageId)}
+                      style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",
+                        background:sel?"#1e2d1a":printed?"#1a1a2e":"#1a1d27",
+                        border:`1px solid ${sel?"#4ade80":printed?"#6366f1":"#2d3148"}`,
+                        opacity:printed?0.75:1}}>
+                      <div style={{display:"flex",justifyContent:"space-between"}}>
+                        <div>
+                          <div style={{fontWeight:600,fontSize:13}}>{order.shipmentAddress.firstName} {order.shipmentAddress.lastName}</div>
+                          <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{order.orderNumber}</div>
+                          <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{order.shipmentAddress.district}, {order.shipmentAddress.city}</div>
                         </div>
-                        <div style={{marginTop:4,display:"flex",gap:6,alignItems:"center"}}>
-                          {sel && <span style={{fontSize:10,color:"#4ade80",fontWeight:600}}>✓ Seçildi</span>}
-                          {/* DEĞİŞİKLİK 4: Sipariş kartındaki etiket metni güncellendi */}
-                          {printed && (
-                            <span
-                              onClick={(e) => togglePrinted(order.shipmentPackageId, e)}
-                              title="Yazdırıldı işaretini kaldır"
-                              style={{fontSize:10,color:"#818cf8",fontWeight:600,cursor:"pointer",
-                                borderBottom:"1px dashed #818cf8",lineHeight:1.2}}>
-                              🖨️ Yazdırıldı işaretini kaldır
-                            </span>
-                          )}
+                        <div style={{textAlign:"right"}}>
+                          <span style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"#1e2235",color:"#f27a1a",fontWeight:600}}>{order.cargoProviderName}</span>
+                          <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{order.lines.length} ürün</div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {tab==="print" && (
-              <div style={{padding:16}}>
-                <div style={{padding:12,background:"#1a1d27",borderRadius:8,border:"1px solid #2d3148",marginBottom:12}}>
-                  <div style={{fontSize:13,fontWeight:600}}>{selectedOrders.length} etiket seçildi</div>
-                  <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Boyut: {settings.labelWidth}×{settings.labelHeight}mm</div>
-                </div>
-                <button onClick={handlePrint} style={{
-                  width:"100%",padding:12,borderRadius:8,border:"none",cursor:"pointer",
-                  background:selectedOrders.length?"#f27a1a":"#374151",color:"#fff",fontWeight:700,fontSize:14,marginBottom:12
-                }}>🖨️ Yazdır</button>
-                <div style={{fontSize:11,color:"#64748b",lineHeight:1.8,marginBottom:16}}>
-                  <strong style={{color:"#94a3b8"}}>Termal yazıcı için:</strong><br/>
-                  Sayfa boyutu: <strong style={{color:"#94a3b8"}}>özel → {settings.labelWidth}×{settings.labelHeight}mm</strong><br/>
-                  Kenar boşlukları: <strong style={{color:"#94a3b8"}}>sıfır</strong>
-                </div>
-
-                <div style={{borderTop:"1px solid #2d3148",paddingTop:14,marginBottom:8}}>
-                  <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"1px",marginBottom:12}}>⚙️ Etiket Şablonu</div>
-                  <div style={{display:"grid",gap:10}}>
-                    <div>
-                      <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Mağaza Logosu</div>
-                      <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} style={{display:"none"}}/>
-                      <button onClick={()=>logoInputRef.current.click()} style={{
-                        width:"100%",padding:"8px",borderRadius:6,border:"1px dashed #2d3148",
-                        background:"#1a1d27",color:"#94a3b8",cursor:"pointer",fontSize:12
-                      }}>{logoDataUrl?"✅ Logo yüklendi — değiştir":"📁 Logo dosyası seç"}</button>
-                      {logoDataUrl && (
-                        <div style={{marginTop:8,textAlign:"center",background:"#1a1d27",borderRadius:6,padding:8}}>
-                          <img src={logoDataUrl} alt="önizleme" style={{maxHeight:40,maxWidth:"100%",objectFit:"contain"}}/>
-                        </div>
-                      )}
+                      <div style={{marginTop:4,display:"flex",gap:6,alignItems:"center"}}>
+                        {sel && <span style={{fontSize:10,color:"#4ade80",fontWeight:600}}>✓ Seçildi</span>}
+                        {printed && <span style={{fontSize:10,color:"#818cf8",fontWeight:600}}>🖨️ Yazdırıldı</span>}
+                      </div>
                     </div>
-                    {[
-                      ["storeName","Yedek Mağaza Adı (logo yoksa)","text"],
-                      ["labelWidth","Etiket Genişliği (mm)","number"],
-                      ["labelHeight","Etiket Yüksekliği (mm)","number"],
-                      ["fontSize","Yazı Boyutu (pt)","number"],
-                    ].map(([key,label,type])=>(
-                      <div key={key}>
-                        <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{label}</div>
-                        <input type={type} value={settings[key]}
-                          onChange={e=>setSettings(p=>({...p,[key]:type==="number"?Number(e.target.value):e.target.value}))}/>
-                      </div>
-                    ))}
-                    <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#94a3b8",cursor:"pointer"}}>
-                      <input type="checkbox" checked={settings.showProducts} onChange={e=>setSettings(p=>({...p,showProducts:e.target.checked}))}/>
-                      Ürün listesini göster
-                    </label>
-                  </div>
-                </div>
-
-                {printedOrders.length > 0 && (
-                  <div style={{marginTop:16,padding:"10px 12px",background:"#1a1a2e",borderRadius:8,border:"1px solid #6366f1"}}>
-                    <div style={{fontSize:12,color:"#818cf8",fontWeight:600}}>🖨️ {printedOrders.length} sipariş yazdırıldı</div>
-                    <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Bu bilgi sunucuda kalıcı olarak saklanır.</div>
-                    {/* DEĞİŞİKLİK 5: Yazdır sekmesindeki buton metni güncellendi */}
-                    <button onClick={handleClearPrinted} style={{
-                      marginTop:8,padding:"5px 10px",borderRadius:5,border:"1px solid #6366f1",
-                      background:"none",color:"#f87171",cursor:"pointer",fontSize:11
-                    }}>Yazdırıldı işaretini kaldır</button>
-                  </div>
-                )}
+                  );
+                })}
               </div>
-            )}
+            </div>
           </div>
 
-          <div style={{flex:1,overflowY:"auto",background:"#0d1018",display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 24px"}}>
-            <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"1px",marginBottom:20}}>
-              {currentPreview?"Etiket Önizleme":"Bir sipariş seçin"}
-            </div>
-            {currentPreview
-              ? <div style={{boxShadow:"0 8px 40px rgba(0,0,0,0.5)"}}>
-                  <LabelHTML
-                    order={currentPreview}
-                    settings={settings}
-                    logoDataUrl={logoDataUrl}
-                    orderIndex={getOrderIndex(currentPreview)}
-                  />
+          {/* SAĞ PANEL: Yazdırma ekranı */}
+          <div style={{flex:1,background:"#0d1018",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 32px"}}>
+            <div style={{width:"100%",maxWidth:360,display:"flex",flexDirection:"column",gap:20}}>
+
+              {/* Seçili sipariş sayısı */}
+              <div style={{background:"#1a1d27",borderRadius:12,border:"1px solid #2d3148",padding:"24px 28px",textAlign:"center"}}>
+                <div style={{fontSize:48,fontWeight:800,color:selectedOrders.length?"#f27a1a":"#374151",lineHeight:1}}>
+                  {selectedOrders.length}
                 </div>
-              : <div style={{textAlign:"center",color:"#334155",marginTop:60}}><div style={{fontSize:48}}>📦</div><div style={{marginTop:12,fontSize:14}}>Önizleme için siparişe tıklayın</div></div>
-            }
+                <div style={{fontSize:14,color:"#64748b",marginTop:8}}>
+                  {selectedOrders.length === 0
+                    ? "Henüz sipariş seçilmedi"
+                    : selectedOrders.length === 1
+                      ? "sipariş seçildi"
+                      : "sipariş seçildi"
+                  }
+                </div>
+                {selectedOrders.length > 0 && (
+                  <div style={{fontSize:11,color:"#475569",marginTop:6}}>
+                    Etiket boyutu: {settings.labelWidth}×{settings.labelHeight}mm
+                  </div>
+                )}
+              </div>
+
+              {/* Yazdır butonu */}
+              <button onClick={handlePrint} disabled={selectedOrders.length === 0} style={{
+                width:"100%",padding:"16px",borderRadius:10,border:"none",cursor:selectedOrders.length?"pointer":"not-allowed",
+                background:selectedOrders.length?"#f27a1a":"#1e2235",
+                color:selectedOrders.length?"#fff":"#475569",
+                fontWeight:700,fontSize:16,
+                transition:"all 0.15s",
+                boxShadow:selectedOrders.length?"0 4px 20px rgba(242,122,26,0.35)":"none"
+              }}>
+                🖨️ Yazdır
+              </button>
+
+              {selectedOrders.length > 0 && (
+                <div style={{fontSize:11,color:"#475569",textAlign:"center",lineHeight:1.8}}>
+                  <strong style={{color:"#64748b"}}>Termal yazıcı için:</strong><br/>
+                  Sayfa boyutu: <strong style={{color:"#64748b"}}>özel → {settings.labelWidth}×{settings.labelHeight}mm</strong><br/>
+                  Kenar boşlukları: <strong style={{color:"#64748b"}}>sıfır</strong>
+                </div>
+              )}
+
+              {printedOrders.length > 0 && (
+                <div style={{padding:"12px 16px",background:"#1a1a2e",borderRadius:8,border:"1px solid #6366f1",textAlign:"center"}}>
+                  <div style={{fontSize:12,color:"#818cf8",fontWeight:600}}>🖨️ {printedOrders.length} sipariş daha önce yazdırıldı</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
