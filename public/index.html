@@ -842,13 +842,7 @@ function App() {
                 🖨️ Yazdır
               </button>
 
-              {selectedOrders.length > 0 && (
-                <div style={{fontSize:11,color:"#475569",textAlign:"center",lineHeight:1.8}}>
-                  <strong style={{color:"#64748b"}}>Termal yazıcı için:</strong><br/>
-                  Sayfa boyutu: <strong style={{color:"#64748b"}}>özel → {settings.labelWidth}×{settings.labelHeight}mm</strong><br/>
-                  Kenar boşlukları: <strong style={{color:"#64748b"}}>sıfır</strong>
-                </div>
-              )}
+
 
               {printedOrders.length > 0 && (
                 <div style={{padding:"12px 16px",background:"#1a1a2e",borderRadius:8,border:"1px solid #6366f1",textAlign:"center"}}>
