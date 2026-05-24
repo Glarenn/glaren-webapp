@@ -349,7 +349,11 @@ function CargoProviderDisplay({ name }) {
   if (!name) return null;
   const key = getCargoKey(name);
   if (key && CARGO_IMG[key]) {
-    return <img src={CARGO_IMG[key]} alt={name} style={{height:28,objectFit:"contain",display:"block"}}/>;
+    return (
+      <div style={{display:"inline-block",background:"#fff",borderRadius:6,padding:"3px 7px",lineHeight:0}}>
+        <img src={CARGO_IMG[key]} alt={name} style={{height:28,objectFit:"contain",display:"block"}}/>
+      </div>
+    );
   }
   return <span style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{name}</span>;
 }
@@ -360,7 +364,11 @@ function CargoLogoBadge({ name, small }) {
   const key = getCargoKey(name);
   const h = small ? 20 : 24;
   if (key && CARGO_IMG[key]) {
-    return <img src={CARGO_IMG[key]} alt={name} style={{height:h,objectFit:"contain",display:"block"}}/>;
+    return (
+      <div style={{display:"inline-block",background:"#fff",borderRadius:4,padding:"2px 5px",lineHeight:0}}>
+        <img src={CARGO_IMG[key]} alt={name} style={{height:h,objectFit:"contain",display:"block"}}/>
+      </div>
+    );
   }
   return <span style={{fontWeight:700,fontSize:10,color:"#f27a1a"}}>{name}</span>;
 }
