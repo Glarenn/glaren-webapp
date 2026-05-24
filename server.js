@@ -70,7 +70,7 @@ app.delete("/api/printed/:id", async (req, res) => {
   }
 });
 
-// Trendyol API proxy endpoint
+// Trendyol API proxy - Siparişler
 app.get("/api/orders", async (req, res) => {
   const sellerId = process.env.SELLER_ID || req.query.sellerId;
   const apiKey = process.env.API_KEY || req.query.apiKey;
@@ -124,6 +124,80 @@ app.get("/api/orders", async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error("Trendyol API hatası:", err.message);
+    res.status(500).json({ error: "Trendyol API'ye ulaşılamadı: " + err.message });
+  }
+});
+
+// Trendyol API proxy - Ürün Listesi
+app.get("/api/products", async (req, res) => {
+  const sellerId = process.env.SELLER_ID;
+  const apiKey = process.env.API_KEY;
+  const apiSecret = process.env.API_SECRET;
+  if (!sellerId || !apiKey || !apiSecret) {
+    return res.status(400).json({ error: "API bilgileri eksik." });
+  }
+  const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+  const { page = 0, size = 50, barcode, name } = req.query;
+
+  let url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=${page}&size=${size}&approved=true`;
+  if (barcode) url += `&barcode=${encodeURIComponent(barcode)}`;
+  if (name) url += `&name=${encodeURIComponent(name)}`;
+
+  try {
+    const fetchFn = typeof fetch !== "undefined" ? fetch : require("node-fetch");
+    const response = await fetchFn(url, {
+      headers: {
+        "Authorization": `Basic ${credentials}`,
+        "User-Agent": `${sellerId} - SelfIntegration`,
+        "Content-Type": "application/json",
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) return res.status(response.status).json({ error: data });
+    res.json(data);
+  } catch (err) {
+    console.error("Ürün listesi hatası:", err.message);
+    res.status(500).json({ error: "Trendyol API'ye ulaşılamadı: " + err.message });
+  }
+});
+
+// Trendyol API proxy - Stok Güncelleme
+app.post("/api/products/stock", async (req, res) => {
+  const sellerId = process.env.SELLER_ID;
+  const apiKey = process.env.API_KEY;
+  const apiSecret = process.env.API_SECRET;
+  if (!sellerId || !apiKey || !apiSecret) {
+    return res.status(400).json({ error: "API bilgileri eksik." });
+  }
+  const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+  // items: [{ barcode, quantity }]
+  const { items } = req.body;
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "items dizisi gereklidir." });
+  }
+  const url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products/price-and-inventory`;
+  const payload = {
+    items: items.map(item => ({
+      barcode: item.barcode,
+      quantity: Number(item.quantity),
+    }))
+  };
+  try {
+    const fetchFn = typeof fetch !== "undefined" ? fetch : require("node-fetch");
+    const response = await fetchFn(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Basic ${credentials}`,
+        "User-Agent": `${sellerId} - SelfIntegration`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) return res.status(response.status).json({ error: data });
+    res.json(data);
+  } catch (err) {
+    console.error("Stok güncelleme hatası:", err.message);
     res.status(500).json({ error: "Trendyol API'ye ulaşılamadı: " + err.message });
   }
 });
