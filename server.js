@@ -180,6 +180,8 @@ app.post("/api/products/stock", async (req, res) => {
     items: items.map(item => ({
       barcode: item.barcode,
       quantity: Number(item.quantity),
+      salePrice: item.salePrice,
+      listPrice: item.listPrice,
     }))
   };
   try {
