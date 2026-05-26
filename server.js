@@ -139,7 +139,7 @@ app.get("/api/products", async (req, res) => {
   const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const { page = 0, size = 50, barcode, name } = req.query;
 
-  let url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=${page}&size=${size}&approved=true`;
+  let url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=${page}&size=${size}&approved=true&archived=false`;
   if (barcode) url += `&barcode=${encodeURIComponent(barcode)}`;
   if (name) url += `&name=${encodeURIComponent(name)}`;
 
@@ -175,7 +175,7 @@ app.post("/api/products/stock", async (req, res) => {
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "items dizisi gereklidir." });
   }
-  const url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products/price-and-inventory`;
+  const url = `https://apigw.trendyol.com/integration/inventory/sellers/${sellerId}/products/price-and-inventory`;
   const payload = {
     items: items.map(item => ({
       barcode: item.barcode,
