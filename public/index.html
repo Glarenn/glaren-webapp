@@ -550,16 +550,37 @@ function UrunlerTab() {
   const fetchProducts = async (p = 0) => {
     setLoading(true); setError("");
     try {
-      let url = `/api/products?page=${p}&size=${PAGE_SIZE}`;
-      if (searchBarcode.trim()) url += `&barcode=${encodeURIComponent(searchBarcode.trim())}`;
-      if (searchName.trim()) url += `&name=${encodeURIComponent(searchName.trim())}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (!res.ok) throw new Error(JSON.stringify(data.error || data));
-      setProducts(data.content || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalElements(data.totalElements || 0);
-      setPage(p);
+      const isBarcodeSearch = !!searchBarcode.trim();
+      if (isBarcodeSearch) {
+        // Barkod aramasında tüm sayfaları tara
+        const allResults = [];
+        let currentPage = 0;
+        let totalPages = 1;
+        while (currentPage < totalPages) {
+          let url = `/api/products?page=${currentPage}&size=200&barcode=${encodeURIComponent(searchBarcode.trim())}`;
+          if (searchName.trim()) url += `&name=${encodeURIComponent(searchName.trim())}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (!res.ok) throw new Error(JSON.stringify(data.error || data));
+          allResults.push(...(data.content || []));
+          totalPages = data.totalPages || 1;
+          currentPage++;
+        }
+        setProducts(allResults);
+        setTotalPages(1);
+        setTotalElements(allResults.length);
+        setPage(0);
+      } else {
+        let url = `/api/products?page=${p}&size=${PAGE_SIZE}`;
+        if (searchName.trim()) url += `&name=${encodeURIComponent(searchName.trim())}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!res.ok) throw new Error(JSON.stringify(data.error || data));
+        setProducts(data.content || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalElements(data.totalElements || 0);
+        setPage(p);
+      }
       setStockEdits({});
       setStockSaved({});
     } catch (e) {
