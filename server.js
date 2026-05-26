@@ -139,7 +139,7 @@ app.get("/api/products", async (req, res) => {
   const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const { page = 0, size = 50, barcode, name } = req.query;
 
-  let url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=${page}&size=${size}&approved=true&archived=false`;
+  let url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=${page}&size=${size}&approved=true&archived=false&onSale=true`;
   if (barcode) url += `&barcode=${encodeURIComponent(barcode)}`;
   if (name) url += `&name=${encodeURIComponent(name)}`;
 
@@ -170,7 +170,6 @@ app.post("/api/products/stock", async (req, res) => {
     return res.status(400).json({ error: "API bilgileri eksik." });
   }
   const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
-  // items: [{ barcode, quantity }]
   const { items } = req.body;
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "items dizisi gereklidir." });
@@ -180,14 +179,15 @@ app.post("/api/products/stock", async (req, res) => {
     items: items.map(item => ({
       barcode: item.barcode,
       quantity: Number(item.quantity),
-      salePrice: item.salePrice,
-      listPrice: item.listPrice,
+      salePrice: Number(item.salePrice),
+      listPrice: Number(item.listPrice),
     }))
   };
+  console.log("Stok güncelleme isteği:", JSON.stringify(payload));
   try {
     const fetchFn = typeof fetch !== "undefined" ? fetch : require("node-fetch");
     const response = await fetchFn(url, {
-      method: "PUT",
+      method: "POST",
       headers: {
         "Authorization": `Basic ${credentials}`,
         "User-Agent": `${sellerId} - SelfIntegration`,
@@ -196,6 +196,7 @@ app.post("/api/products/stock", async (req, res) => {
       body: JSON.stringify(payload),
     });
     const data = await response.json();
+    console.log("Stok güncelleme cevabı:", JSON.stringify(data));
     if (!response.ok) return res.status(response.status).json({ error: data });
     res.json(data);
   } catch (err) {
