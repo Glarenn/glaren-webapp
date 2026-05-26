@@ -542,7 +542,7 @@ function UrunlerTab() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 10;
 
   // Filtreler
   const [searchName, setSearchName] = useState("");
@@ -589,17 +589,22 @@ function UrunlerTab() {
   const handleStockSave = async (barcode) => {
     const newQty = stockEdits[barcode];
     if (newQty === undefined || newQty === "") return;
+    const product = products.find(p => (p.barcode || p.stockCode) === barcode);
     setSavingStock(prev => ({ ...prev, [barcode]: true }));
     try {
       const res = await fetch("/api/products/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [{ barcode, quantity: Number(newQty) }] }),
+        body: JSON.stringify({ items: [{ 
+          barcode, 
+          quantity: Number(newQty),
+          salePrice: product?.salePrice,
+          listPrice: product?.listPrice,
+        }] }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(JSON.stringify(data.error || data));
       setStockSaved(prev => ({ ...prev, [barcode]: true }));
-      // Ürün listesindeki stok değerini de güncelle
       setProducts(prev => prev.map(p => {
         if ((p.barcode || p.stockCode) === barcode) {
           return { ...p, quantity: Number(newQty) };
@@ -711,89 +716,106 @@ function UrunlerTab() {
           </div>
         )}
 
-        {/* Ürün kartları */}
+        {/* Ürün listesi — tablo */}
         {!loading && (
-          <div style={{flex:1,overflowY:"auto",padding:16,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,alignContent:"start"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"0"}}>
             {filtered.length === 0 && !error && (
-              <div style={{gridColumn:"1/-1",textAlign:"center",padding:60,color:"#475569"}}>
+              <div style={{textAlign:"center",padding:60,color:"#475569"}}>
                 <div style={{fontSize:40,marginBottom:12}}>📦</div>
                 <div style={{fontSize:14}}>Ürün bulunamadı</div>
               </div>
             )}
-            {filtered.map((product, idx) => {
-              const barcode = product.barcode || product.stockCode || "";
-              const imgUrl = product.images?.[0]?.url || null;
-              const stock = stockEdits[barcode] !== undefined ? stockEdits[barcode] : (product.quantity ?? "—");
-              const currentStock = product.quantity ?? null;
-              const isSaving = savingStock[barcode];
-              const isSaved = stockSaved[barcode];
-              const hasEdit = stockEdits[barcode] !== undefined && String(stockEdits[barcode]) !== String(currentStock);
+            {filtered.length > 0 && (
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <thead style={{position:"sticky",top:0,zIndex:10}}>
+                  <tr style={{background:"#13161f",borderBottom:"2px solid #1e2235"}}>
+                    <th style={{padding:"10px 12px",textAlign:"left",color:"#64748b",fontWeight:600,fontSize:11,width:70}}>Resim</th>
+                    <th style={{padding:"10px 12px",textAlign:"left",color:"#64748b",fontWeight:600,fontSize:11}}>Ürün Adı</th>
+                    <th style={{padding:"10px 12px",textAlign:"left",color:"#64748b",fontWeight:600,fontSize:11,whiteSpace:"nowrap"}}>Model Kodu</th>
+                    <th style={{padding:"10px 12px",textAlign:"left",color:"#64748b",fontWeight:600,fontSize:11}}>Barkod</th>
+                    <th style={{padding:"10px 12px",textAlign:"left",color:"#64748b",fontWeight:600,fontSize:11}}>Renk</th>
+                    <th style={{padding:"10px 12px",textAlign:"right",color:"#64748b",fontWeight:600,fontSize:11}}>Fiyat</th>
+                    <th style={{padding:"10px 12px",textAlign:"center",color:"#64748b",fontWeight:600,fontSize:11,width:160}}>Stok</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((product, idx) => {
+                    const barcode = product.barcode || product.stockCode || "";
+                    const imgUrl = product.images?.[0]?.url || null;
+                    const currentStock = product.quantity ?? null;
+                    const isSaving = savingStock[barcode];
+                    const isSaved = stockSaved[barcode];
+                    const hasEdit = stockEdits[barcode] !== undefined && String(stockEdits[barcode]) !== String(currentStock);
+                    const color = product.attributes?.find(a => a.attributeName === "Renk")?.attributeValue || product.color || "—";
 
-              return (
-                <div key={barcode || idx} style={{
-                  background:"#13161f",borderRadius:10,border:"1px solid #1e2235",
-                  overflow:"hidden",display:"flex",flexDirection:"column"
-                }}>
-                  {/* Resim */}
-                  <div style={{height:160,background:"#0d1018",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-                    {imgUrl
-                      ? <img src={imgUrl} alt={product.title} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
-                      : <div style={{fontSize:36,color:"#2d3148"}}>📦</div>
-                    }
-                  </div>
-
-                  {/* Bilgiler */}
-                  <div style={{padding:"12px 14px",flex:1,display:"flex",flexDirection:"column",gap:6}}>
-                    <div style={{fontWeight:600,fontSize:12,color:"#e2e8f0",lineHeight:1.4,marginBottom:2}}>{product.title}</div>
-
-                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                      {product.categoryName && (
-                        <span style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:"#1e2235",color:"#64748b",fontWeight:600}}>{product.categoryName}</span>
-                      )}
-                      {product.productMainId && (
-                        <span style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:"#1a2d1a",color:"#4ade80",fontWeight:600}}>Model: {product.productMainId}</span>
-                      )}
-                    </div>
-
-                    <div style={{fontSize:11,color:"#64748b",display:"flex",flexDirection:"column",gap:3}}>
-                      {barcode && <div style={{fontFamily:"monospace",color:"#94a3b8"}}>🔖 {barcode}</div>}
-                      {product.color && <div>Renk: <span style={{color:"#e2e8f0"}}>{product.color}</span></div>}
-                      {product.salePrice !== undefined && (
-                        <div style={{fontWeight:700,fontSize:13,color:"#f27a1a",marginTop:2}}>
-                          {Number(product.salePrice).toLocaleString("tr-TR",{minimumFractionDigits:2})} ₺
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Stok güncelleme */}
-                    <div style={{marginTop:"auto",paddingTop:8,borderTop:"1px solid #1e2235",display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:10,color:"#64748b",whiteSpace:"nowrap"}}>Stok:</span>
-                      <input
-                        type="number" min="0"
-                        value={stockEdits[barcode] !== undefined ? stockEdits[barcode] : (currentStock ?? "")}
-                        onChange={e => setStockEdits(prev => ({ ...prev, [barcode]: e.target.value }))}
-                        style={{
-                          width:70,padding:"4px 6px",borderRadius:5,border:`1px solid ${hasEdit?"#f27a1a":"#2d3148"}`,
-                          background:"#0d1018",color:"#e2e8f0",fontSize:12,fontWeight:600,textAlign:"center"
-                        }}
-                      />
-                      <button
-                        onClick={() => handleStockSave(barcode)}
-                        disabled={!hasEdit || isSaving}
-                        style={{
-                          flex:1,padding:"4px 8px",borderRadius:5,border:"none",cursor:hasEdit?"pointer":"not-allowed",
-                          background:isSaved?"#16a34a":hasEdit?"#f27a1a":"#1e2235",
-                          color:hasEdit||isSaved?"#fff":"#475569",fontSize:11,fontWeight:700,
-                          transition:"all 0.2s"
-                        }}
-                      >
-                        {isSaving ? "..." : isSaved ? "✓ Kaydedildi" : "Güncelle"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                    return (
+                      <tr key={barcode || idx} style={{borderBottom:"1px solid #1e2235",background:idx%2===0?"#0d1018":"#0f1117"}}>
+                        {/* Resim */}
+                        <td style={{padding:"8px 12px"}}>
+                          <div style={{width:52,height:52,background:"#13161f",borderRadius:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                            {imgUrl
+                              ? <img src={imgUrl} alt={product.title} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                              : <span style={{fontSize:20,color:"#2d3148"}}>📦</span>
+                            }
+                          </div>
+                        </td>
+                        {/* Ürün adı + kategori */}
+                        <td style={{padding:"8px 12px",maxWidth:280}}>
+                          <div style={{fontWeight:600,color:"#e2e8f0",lineHeight:1.4,marginBottom:3}}>{product.title}</div>
+                          {product.categoryName && (
+                            <span style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:"#1e2235",color:"#64748b",fontWeight:600}}>{product.categoryName}</span>
+                          )}
+                        </td>
+                        {/* Model kodu */}
+                        <td style={{padding:"8px 12px",whiteSpace:"nowrap"}}>
+                          <span style={{fontFamily:"monospace",fontSize:11,color:"#4ade80"}}>{product.productMainId || "—"}</span>
+                        </td>
+                        {/* Barkod */}
+                        <td style={{padding:"8px 12px",whiteSpace:"nowrap"}}>
+                          <span style={{fontFamily:"monospace",fontSize:11,color:"#94a3b8"}}>{barcode || "—"}</span>
+                        </td>
+                        {/* Renk */}
+                        <td style={{padding:"8px 12px",whiteSpace:"nowrap",color:"#e2e8f0",fontSize:11}}>{color}</td>
+                        {/* Fiyat */}
+                        <td style={{padding:"8px 12px",textAlign:"right",whiteSpace:"nowrap"}}>
+                          <span style={{fontWeight:700,color:"#f27a1a",fontSize:13}}>
+                            {product.salePrice !== undefined ? Number(product.salePrice).toLocaleString("tr-TR",{minimumFractionDigits:2}) + " ₺" : "—"}
+                          </span>
+                        </td>
+                        {/* Stok */}
+                        <td style={{padding:"8px 12px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:5,justifyContent:"center"}}>
+                            <input
+                              type="number" min="0"
+                              value={stockEdits[barcode] !== undefined ? stockEdits[barcode] : (currentStock ?? "")}
+                              onChange={e => setStockEdits(prev => ({ ...prev, [barcode]: e.target.value }))}
+                              style={{
+                                width:60,padding:"4px 6px",borderRadius:5,
+                                border:`1px solid ${hasEdit?"#f27a1a":"#2d3148"}`,
+                                background:"#0d1018",color:"#e2e8f0",fontSize:12,fontWeight:600,textAlign:"center"
+                              }}
+                            />
+                            <button
+                              onClick={() => handleStockSave(barcode)}
+                              disabled={!hasEdit || isSaving}
+                              style={{
+                                padding:"4px 10px",borderRadius:5,border:"none",
+                                cursor:hasEdit?"pointer":"not-allowed",
+                                background:isSaved?"#16a34a":hasEdit?"#f27a1a":"#1e2235",
+                                color:hasEdit||isSaved?"#fff":"#475569",
+                                fontSize:10,fontWeight:700,whiteSpace:"nowrap",transition:"all 0.2s"
+                              }}
+                            >
+                              {isSaving ? "..." : isSaved ? "✓" : "Kaydet"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>
