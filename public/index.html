@@ -537,6 +537,8 @@ function KargoTable({ orders, loading, error }) {
 
 function UrunlerTab() {
   const [products, setProducts] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [page, setPage] = useState(0);
@@ -550,9 +552,19 @@ function UrunlerTab() {
   const [searchCategory, setSearchCategory] = useState("Tümü");
 
   // Stok güncelleme
-  const [stockEdits, setStockEdits] = useState({}); // barcode -> yeni stok değeri
-  const [savingStock, setSavingStock] = useState({}); // barcode -> bool
-  const [stockSaved, setStockSaved] = useState({}); // barcode -> bool (başarı göstergesi)
+  const [stockEdits, setStockEdits] = useState({});
+  const [savingStock, setSavingStock] = useState({});
+  const [stockSaved, setStockSaved] = useState({});
+
+  // Tüm kategorileri bir kez çek
+  useEffect(() => {
+    setCategoriesLoading(true);
+    fetch("/api/products/categories")
+      .then(r => r.json())
+      .then(data => setAllCategories(data.categories || []))
+      .catch(() => {})
+      .finally(() => setCategoriesLoading(false));
+  }, []);
 
   const fetchProducts = async (p = 0) => {
     setLoading(true); setError("");
@@ -560,6 +572,7 @@ function UrunlerTab() {
       let url = `/api/products?page=${p}&size=${PAGE_SIZE}`;
       if (searchBarcode.trim()) url += `&barcode=${encodeURIComponent(searchBarcode.trim())}`;
       if (searchName.trim()) url += `&name=${encodeURIComponent(searchName.trim())}`;
+      if (searchCategory !== "Tümü") url += `&categoryName=${encodeURIComponent(searchCategory)}`;
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(JSON.stringify(data.error || data));
@@ -578,8 +591,8 @@ function UrunlerTab() {
 
   useEffect(() => { fetchProducts(0); }, []);
 
-  // Kategori listesi
-  const categories = ["Tümü", ...new Set(products.map(p => p.categoryName).filter(Boolean))];
+  // Kategori listesi — tüm ürünlerden çekilen
+  const categories = ["Tümü", ...allCategories];
 
   const filtered = products.filter(p => {
     const matchCat = searchCategory === "Tümü" || p.categoryName === searchCategory;
@@ -642,7 +655,9 @@ function UrunlerTab() {
         </div>
 
         <div>
-          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:5}}>Kategori</div>
+          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:5}}>
+            Kategori {categoriesLoading && <span style={{color:"#f27a1a"}}>yükleniyor...</span>}
+          </div>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
             {categories.map(cat => (
               <button key={cat} onClick={() => setSearchCategory(cat)} style={{
