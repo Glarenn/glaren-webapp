@@ -589,28 +589,27 @@ function UrunlerTab() {
   const handleStockSave = async (barcode) => {
     const newQty = stockEdits[barcode];
     if (newQty === undefined || newQty === "") return;
-    const product = products.find(p => (p.barcode || p.stockCode) === barcode);
+    if (!barcode) { alert("Bu ürünün barkodu boş, stok güncellenemiyor."); return; }
+    const product = products.find(p => p.barcode === barcode);
+    if (!product) { alert("Ürün bulunamadı."); return; }
     setSavingStock(prev => ({ ...prev, [barcode]: true }));
     try {
       const res = await fetch("/api/products/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: [{ 
-          barcode, 
+          barcode: product.barcode,
           quantity: Number(newQty),
-          salePrice: product?.salePrice,
-          listPrice: product?.listPrice,
+          salePrice: product.salePrice,
+          listPrice: product.listPrice,
         }] }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(JSON.stringify(data.error || data));
       setStockSaved(prev => ({ ...prev, [barcode]: true }));
-      setProducts(prev => prev.map(p => {
-        if ((p.barcode || p.stockCode) === barcode) {
-          return { ...p, quantity: Number(newQty) };
-        }
-        return p;
-      }));
+      setProducts(prev => prev.map(p =>
+        p.barcode === barcode ? { ...p, quantity: Number(newQty) } : p
+      ));
       setTimeout(() => setStockSaved(prev => ({ ...prev, [barcode]: false })), 2000);
     } catch (e) {
       alert("Stok güncellenemedi: " + e.message);
@@ -740,7 +739,7 @@ function UrunlerTab() {
                 </thead>
                 <tbody>
                   {filtered.map((product, idx) => {
-                    const barcode = product.barcode || product.stockCode || "";
+                    const barcode = product.barcode || "";
                     const imgUrl = product.images?.[0]?.url || null;
                     const currentStock = product.quantity ?? null;
                     const isSaving = savingStock[barcode];
