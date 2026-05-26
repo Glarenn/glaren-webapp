@@ -128,6 +128,57 @@ app.get("/api/orders", async (req, res) => {
   }
 });
 
+// Trendyol API proxy - Tüm Kategorileri Çek
+app.get("/api/products/categories", async (req, res) => {
+  const sellerId = process.env.SELLER_ID;
+  const apiKey = process.env.API_KEY;
+  const apiSecret = process.env.API_SECRET;
+  if (!sellerId || !apiKey || !apiSecret) {
+    return res.status(400).json({ error: "API bilgileri eksik." });
+  }
+  const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+  const fetchFn = typeof fetch !== "undefined" ? fetch : require("node-fetch");
+
+  try {
+    // Önce ilk sayfayı çek, totalPages'i öğren
+    const firstRes = await fetchFn(
+      `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=0&size=200&approved=true&archived=false`,
+      { headers: { "Authorization": `Basic ${credentials}`, "User-Agent": `${sellerId} - SelfIntegration`, "Content-Type": "application/json" } }
+    );
+    const firstData = await firstRes.json();
+    const totalPages = firstData.totalPages || 1;
+    const categories = new Set();
+
+    // İlk sayfadan kategorileri topla
+    (firstData.content || []).forEach(p => { if (p.categoryName) categories.add(p.categoryName); });
+
+    // Kalan sayfaları paralel çek
+    const remaining = [];
+    for (let p = 1; p < totalPages; p++) remaining.push(p);
+
+    // 10'ar paralel istek at
+    const chunkSize = 10;
+    for (let i = 0; i < remaining.length; i += chunkSize) {
+      const chunk = remaining.slice(i, i + chunkSize);
+      await Promise.all(chunk.map(async (page) => {
+        try {
+          const r = await fetchFn(
+            `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=${page}&size=200&approved=true&archived=false`,
+            { headers: { "Authorization": `Basic ${credentials}`, "User-Agent": `${sellerId} - SelfIntegration`, "Content-Type": "application/json" } }
+          );
+          const d = await r.json();
+          (d.content || []).forEach(p => { if (p.categoryName) categories.add(p.categoryName); });
+        } catch (e) {}
+      }));
+    }
+
+    res.json({ categories: [...categories].sort((a, b) => a.localeCompare(b, "tr")) });
+  } catch (err) {
+    console.error("Kategori listesi hatası:", err.message);
+    res.status(500).json({ error: "Kategoriler alınamadı: " + err.message });
+  }
+});
+
 // Trendyol API proxy - Ürün Listesi
 app.get("/api/products", async (req, res) => {
   const sellerId = process.env.SELLER_ID;
@@ -137,11 +188,12 @@ app.get("/api/products", async (req, res) => {
     return res.status(400).json({ error: "API bilgileri eksik." });
   }
   const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
-  const { page = 0, size = 50, barcode, name } = req.query;
+  const { page = 0, size = 50, barcode, name, categoryName } = req.query;
 
   let url = `https://apigw.trendyol.com/integration/product/sellers/${sellerId}/products?page=${page}&size=${size}&approved=true&archived=false`;
   if (barcode) url += `&barcode=${encodeURIComponent(barcode)}`;
   if (name) url += `&name=${encodeURIComponent(name)}`;
+  if (categoryName) url += `&categoryName=${encodeURIComponent(categoryName)}`;
 
   try {
     const fetchFn = typeof fetch !== "undefined" ? fetch : require("node-fetch");
