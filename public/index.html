@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0f1117; color: #e2e8f0; font-family: system-ui, sans-serif; }
@@ -547,6 +548,80 @@ function UrunlerTab() {
   const [savingStock, setSavingStock] = useState({});
   const [stockSaved, setStockSaved] = useState({});
 
+  // QR Tarayıcı
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrError, setQrError] = useState("");
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const qrIntervalRef = useRef(null);
+  const qrStreamRef = useRef(null);
+
+  const startQrScanner = async () => {
+    setQrError("");
+    setQrOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      qrStreamRef.current = stream;
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      }, 100);
+      const { BrowserQRCodeReader } = window.ZXing || {};
+      if (!BrowserQRCodeReader) { setQrError("ZXing yüklenemedi"); return; }
+      const codeReader = new BrowserQRCodeReader();
+      qrIntervalRef.current = setInterval(async () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0);
+        try {
+          const imageData = canvas.toDataURL("image/png");
+          const result = await codeReader.decodeFromImageUrl(imageData);
+          if (result && result.text) {
+            stopQrScanner();
+            const code = result.text.trim();
+            setSearchBarcode(code);
+            if (window.navigator.vibrate) window.navigator.vibrate(200);
+            // Tüm ürünlerde ara
+            setLoading(true); setError("");
+            try {
+              const allResults = [];
+              let cp = 0, tp = 1;
+              while (cp < tp) {
+                const res = await fetch(`/api/products?page=${cp}&size=200&barcode=${encodeURIComponent(code)}`);
+                const data = await res.json();
+                allResults.push(...(data.content || []));
+                tp = data.totalPages || 1;
+                cp++;
+              }
+              setProducts(allResults);
+              setTotalPages(1);
+              setTotalElements(allResults.length);
+              setPage(0);
+              setStockEdits({}); setStockSaved({});
+            } catch(e) { setError("Hata: " + e.message); }
+            finally { setLoading(false); }
+          }
+        } catch(e) {}
+      }, 200);
+    } catch(e) {
+      setQrError("Kamera erişimi reddedildi: " + e.message);
+    }
+  };
+
+  const stopQrScanner = () => {
+    if (qrIntervalRef.current) clearInterval(qrIntervalRef.current);
+    if (qrStreamRef.current) qrStreamRef.current.getTracks().forEach(t => t.stop());
+    qrIntervalRef.current = null;
+    qrStreamRef.current = null;
+    setQrOpen(false);
+  };
+
   const fetchProducts = async (p = 0) => {
     setLoading(true); setError("");
     try {
@@ -629,7 +704,50 @@ function UrunlerTab() {
 
       {/* SOL: Filtreler */}
       <div style={{width:220,background:"#13161f",borderRight:"1px solid #1e2235",flexShrink:0,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14}}>
-        <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0",marginBottom:2}}>🔍 Filtrele</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>🔍 Filtrele</div>
+          <button onClick={startQrScanner} title="QR / Barkod Tara" style={{
+            display:"flex",alignItems:"center",gap:5,padding:"5px 9px",borderRadius:7,
+            border:"1px solid #f27a1a",background:"#1a1d27",cursor:"pointer",
+            color:"#f27a1a",fontWeight:700,fontSize:10,letterSpacing:"0.3px"
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f27a1a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <path d="M14 14h2v2h-2z"/><path d="M18 14h3"/><path d="M14 18h2"/><path d="M18 18h3v3"/><path d="M21 18v0"/>
+            </svg>
+            QR Tara
+          </button>
+        </div>
+
+        {/* QR Tarayıcı Modal */}
+        {qrOpen && (
+          <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",zIndex:9999,background:"rgba(0,0,0,0.92)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+            <div style={{position:"relative",width:300,height:300,borderRadius:12,overflow:"hidden",background:"#000"}}>
+              <video ref={videoRef} style={{width:"100%",height:"100%",objectFit:"cover"}} playsInline muted/>
+              <canvas ref={canvasRef} style={{display:"none"}}/>
+              {/* Kılavuz çerçeve */}
+              <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:200,height:200,pointerEvents:"none"}}>
+                <svg width="200" height="200" viewBox="0 0 200 200">
+                  <path d="M20,20 L20,50" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M20,20 L50,20" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M180,20 L150,20" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M180,20 L180,50" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M20,180 L20,150" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M20,180 L50,180" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M180,180 L150,180" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                  <path d="M180,180 L180,150" stroke="#f27a1a" strokeWidth="4" strokeLinecap="round"/>
+                </svg>
+              </div>
+            </div>
+            <div style={{color:"#e2e8f0",fontSize:13,fontWeight:600,textAlign:"center"}}>QR kodu çerçeveye getirin</div>
+            {qrError && <div style={{color:"#f87171",fontSize:12,textAlign:"center",maxWidth:280}}>{qrError}</div>}
+            <button onClick={stopQrScanner} style={{
+              padding:"10px 28px",borderRadius:8,border:"none",cursor:"pointer",
+              background:"#f27a1a",color:"#fff",fontWeight:700,fontSize:14
+            }}>İptal</button>
+          </div>
+        )}
 
         <div>
           <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:5}}>Ürün Adı</div>
