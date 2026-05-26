@@ -543,6 +543,9 @@ function UrunlerTab() {
   const [searchName, setSearchName] = useState("");
   const [searchBarcode, setSearchBarcode] = useState("");
 
+  // Resim büyütme
+  const [enlargedImg, setEnlargedImg] = useState(null);
+
   // Stok güncelleme
   const [stockEdits, setStockEdits] = useState({});
   const [savingStock, setSavingStock] = useState({});
@@ -702,6 +705,17 @@ function UrunlerTab() {
   return (
     <div style={{flex:1,display:"flex",overflow:"hidden",height:"100%"}}>
 
+      {/* Resim büyütme modal */}
+      {enlargedImg && (
+        <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.75)"}}
+          onClick={() => setEnlargedImg(null)}>
+          <div style={{position:"relative"}} onClick={e => e.stopPropagation()}>
+            <img src={enlargedImg} alt="Ürün" style={{width:280,height:280,objectFit:"cover",borderRadius:12,border:"2px solid #fff",display:"block"}}/>
+            <button onClick={() => setEnlargedImg(null)} style={{position:"absolute",top:-10,right:-10,width:26,height:26,borderRadius:"50%",border:"none",background:"#f27a1a",color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer",lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+          </div>
+        </div>
+      )}
+
       {/* SOL: Filtreler */}
       <div style={{width:220,background:"#13161f",borderRight:"1px solid #1e2235",flexShrink:0,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2}}>
@@ -848,7 +862,8 @@ function UrunlerTab() {
                       <tr key={barcode || idx} style={{borderBottom:"1px solid #1e2235",background:idx%2===0?"#0d1018":"#0f1117"}}>
                         {/* Resim */}
                         <td style={{padding:"8px 12px"}}>
-                          <div style={{width:52,height:52,background:"#13161f",borderRadius:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                          <div style={{width:52,height:52,background:"#13161f",borderRadius:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:imgUrl?"zoom-in":"default"}}
+                            onClick={() => imgUrl && setEnlargedImg(imgUrl)}>
                             {imgUrl
                               ? <img src={imgUrl} alt={product.title} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                               : <span style={{fontSize:20,color:"#2d3148"}}>📦</span>
@@ -1096,7 +1111,12 @@ function App() {
           }}>
             🚚 Kargo Aşamasındakiler
             {orders.length > 0 && (
-              <span style={{background:"rgba(255,255,255,0.25)",borderRadius:10,padding:"2px 9px",fontSize:13,fontWeight:700}}>
+              <span style={{
+                background: orders.length > 1 ? "#e53e0e" : "rgba(255,255,255,0.25)",
+                borderRadius:12,padding:"2px 10px",fontSize:15,fontWeight:800,
+                minWidth:26,textAlign:"center",display:"inline-block",
+                boxShadow: orders.length > 1 ? "0 0 8px rgba(229,62,14,0.5)" : "none"
+              }}>
                 {orders.length}
               </span>
             )}
