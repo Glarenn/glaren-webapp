@@ -325,7 +325,6 @@ function formatOrderDate(dateMs) {
   return d.toLocaleString("tr-TR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
 }
 
-// Kargo logo dosya yolları
 const CARGO_IMG = {
   trendyol: "/trendyolexpress.png",
   aras: "/araskargo.png",
@@ -344,7 +343,6 @@ function getCargoKey(name) {
   return null;
 }
 
-// Sipariş detay satırında kullanılan büyük logo
 function CargoProviderDisplay({ name }) {
   if (!name) return null;
   const key = getCargoKey(name);
@@ -358,7 +356,6 @@ function CargoProviderDisplay({ name }) {
   return <span style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{name}</span>;
 }
 
-// Filtre butonu ve sipariş kartı badge'inde kullanılan küçük logo
 function CargoLogoBadge({ name, small }) {
   if (!name) return null;
   const key = getCargoKey(name);
@@ -400,7 +397,6 @@ function ProductRow({ line, isFirst }) {
           <a href="#" className="product-name-link" title={line.productName}>{line.productName}</a>
         </div>
         <div className="product-detail">
-
           {(line.productColor || line.attributes?.find(a=>a.name==="Renk")?.value) &&
             <div>Renk: <span>{line.productColor || line.attributes?.find(a=>a.name==="Renk")?.value}</span></div>
           }
@@ -497,7 +493,6 @@ function KargoTable({ orders, loading, error }) {
                       <span className="order-number">#{order.orderNumber || order.shipmentPackageId}</span>
                     </div>
                     {order.orderDate && <div style={{fontSize:11,color:"#6b7280",marginBottom:2}}>Sipariş Tarihi: {formatOrderDate(order.orderDate)}</div>}
-
                     {remaining && (
                       <div className={`kalan-sure${remaining.urgent?" urgent":""}`}>
                         Kalan Süre:<br/>{remaining.text}
@@ -521,7 +516,6 @@ function KargoTable({ orders, loading, error }) {
                     {order.cargoTrackingNumber && (
                       <div className="tracking-no">{order.cargoTrackingNumber}</div>
                     )}
-
                   </td>
                 </tr>
               );
@@ -537,8 +531,6 @@ function KargoTable({ orders, loading, error }) {
 
 function UrunlerTab() {
   const [products, setProducts] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [page, setPage] = useState(0);
@@ -549,22 +541,11 @@ function UrunlerTab() {
   // Filtreler
   const [searchName, setSearchName] = useState("");
   const [searchBarcode, setSearchBarcode] = useState("");
-  const [searchCategory, setSearchCategory] = useState("Tümü");
 
   // Stok güncelleme
   const [stockEdits, setStockEdits] = useState({});
   const [savingStock, setSavingStock] = useState({});
   const [stockSaved, setStockSaved] = useState({});
-
-  // Tüm kategorileri bir kez çek
-  useEffect(() => {
-    setCategoriesLoading(true);
-    fetch("/api/products/categories")
-      .then(r => r.json())
-      .then(data => setAllCategories(data.categories || []))
-      .catch(() => {})
-      .finally(() => setCategoriesLoading(false));
-  }, []);
 
   const fetchProducts = async (p = 0) => {
     setLoading(true); setError("");
@@ -572,7 +553,6 @@ function UrunlerTab() {
       let url = `/api/products?page=${p}&size=${PAGE_SIZE}`;
       if (searchBarcode.trim()) url += `&barcode=${encodeURIComponent(searchBarcode.trim())}`;
       if (searchName.trim()) url += `&name=${encodeURIComponent(searchName.trim())}`;
-      if (searchCategory !== "Tümü") url += `&categoryName=${encodeURIComponent(searchCategory)}`;
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(JSON.stringify(data.error || data));
@@ -590,14 +570,6 @@ function UrunlerTab() {
   };
 
   useEffect(() => { fetchProducts(0); }, []);
-
-  // Kategori listesi — tüm ürünlerden çekilen
-  const categories = ["Tümü", ...allCategories];
-
-  const filtered = products.filter(p => {
-    const matchCat = searchCategory === "Tümü" || p.categoryName === searchCategory;
-    return matchCat;
-  });
 
   const handleStockSave = async (barcode) => {
     const newQty = stockEdits[barcode];
@@ -635,7 +607,7 @@ function UrunlerTab() {
     <div style={{flex:1,display:"flex",overflow:"hidden",height:"100%"}}>
 
       {/* SOL: Filtreler */}
-      <div style={{width:240,background:"#13161f",borderRight:"1px solid #1e2235",flexShrink:0,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{width:220,background:"#13161f",borderRight:"1px solid #1e2235",flexShrink:0,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14}}>
         <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0",marginBottom:2}}>🔍 Filtrele</div>
 
         <div>
@@ -652,23 +624,7 @@ function UrunlerTab() {
             onChange={e => setSearchBarcode(e.target.value)}
             onKeyDown={e => e.key === "Enter" && fetchProducts(0)}
           />
-        </div>
 
-        <div>
-          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:5}}>
-            Kategori {categoriesLoading && <span style={{color:"#f27a1a"}}>yükleniyor...</span>}
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {categories.map(cat => (
-              <button key={cat} onClick={() => setSearchCategory(cat)} style={{
-                padding:"5px 8px",borderRadius:5,border:"none",cursor:"pointer",
-                textAlign:"left",fontSize:11,fontWeight:600,
-                background:searchCategory===cat?"#f27a1a":"#1a1d27",
-                color:searchCategory===cat?"#fff":"#94a3b8",
-                whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"
-              }} title={cat}>{cat}</button>
-            ))}
-          </div>
         </div>
 
         <button onClick={() => fetchProducts(0)} disabled={loading} style={{
@@ -676,7 +632,7 @@ function UrunlerTab() {
           background:loading?"#374151":"#f27a1a",color:"#fff",fontWeight:700,fontSize:12,marginTop:4
         }}>{loading ? "⏳ Yükleniyor..." : "🔍 Ara"}</button>
 
-        <button onClick={() => { setSearchName(""); setSearchBarcode(""); setSearchCategory("Tümü"); fetchProducts(0); }} style={{
+        <button onClick={() => { setSearchName(""); setSearchBarcode(""); fetchProducts(0); }} style={{
           padding:"6px",borderRadius:6,border:"1px solid #2d3148",cursor:"pointer",
           background:"none",color:"#64748b",fontSize:11
         }}>Filtreleri Temizle</button>
@@ -692,7 +648,7 @@ function UrunlerTab() {
         {/* Üst bar */}
         <div style={{background:"#13161f",borderBottom:"1px solid #1e2235",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <div style={{fontSize:12,color:"#64748b"}}>
-            <span style={{color:"#e2e8f0",fontWeight:600}}>{filtered.length}</span> ürün gösteriliyor
+            <span style={{color:"#e2e8f0",fontWeight:600}}>{products.length}</span> ürün gösteriliyor
             {totalPages > 1 && <span style={{marginLeft:8}}>— Sayfa {page+1} / {totalPages}</span>}
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -702,19 +658,6 @@ function UrunlerTab() {
             {page < totalPages-1 && (
               <button onClick={() => fetchProducts(page+1)} style={{padding:"5px 12px",borderRadius:5,border:"none",cursor:"pointer",background:"#f27a1a",color:"#fff",fontSize:11,fontWeight:600}}>Sonraki →</button>
             )}
-            {/* QR okuyucu butonu - şimdilik pasif */}
-            <button title="QR / Barkod Okuyucu (yakında)" style={{
-              width:34,height:34,borderRadius:6,border:"1px solid #2d3148",
-              background:"#1a1d27",cursor:"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",opacity:0.5
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                <rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/>
-                <rect x="3" y="16" width="5" height="5"/>
-                <path d="M21 16h-3v3"/><path d="M21 19v2"/><path d="M16 21h2"/>
-                <path d="M3 10h3"/><path d="M10 3v3"/><path d="M10 10H7"/><path d="M10 13v-3"/>
-                <path d="M13 3v7h7"/>
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -733,13 +676,13 @@ function UrunlerTab() {
         {/* Ürün listesi — tablo */}
         {!loading && (
           <div style={{flex:1,overflowY:"auto",padding:"0"}}>
-            {filtered.length === 0 && !error && (
+            {products.length === 0 && !error && (
               <div style={{textAlign:"center",padding:60,color:"#475569"}}>
                 <div style={{fontSize:40,marginBottom:12}}>📦</div>
                 <div style={{fontSize:14}}>Ürün bulunamadı</div>
               </div>
             )}
-            {filtered.length > 0 && (
+            {products.length > 0 && (
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                 <thead style={{position:"sticky",top:0,zIndex:10}}>
                   <tr style={{background:"#13161f",borderBottom:"2px solid #1e2235"}}>
@@ -753,7 +696,7 @@ function UrunlerTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((product, idx) => {
+                  {products.map((product, idx) => {
                     const barcode = product.barcode || "";
                     const imgUrl = product.images?.[0]?.url || null;
                     const currentStock = product.quantity ?? null;
@@ -1052,7 +995,7 @@ function App() {
         </div>
       )}
 
-      {/* Etiketler — Sol: Sipariş listesi, Sağ: Yazdır paneli */}
+      {/* Etiketler */}
       {tab === "etiketler" && (
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
 
@@ -1151,7 +1094,6 @@ function App() {
           <div style={{flex:1,background:"#0d1018",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 32px"}}>
             <div style={{width:"100%",maxWidth:360,display:"flex",flexDirection:"column",gap:20}}>
 
-              {/* Seçili sipariş sayısı */}
               <div style={{background:"#1a1d27",borderRadius:12,border:"1px solid #2d3148",padding:"24px 28px",textAlign:"center"}}>
                 <div style={{fontSize:48,fontWeight:800,color:selectedOrders.length?"#f27a1a":"#374151",lineHeight:1}}>
                   {selectedOrders.length}
@@ -1171,7 +1113,6 @@ function App() {
                 )}
               </div>
 
-              {/* Yazdır butonu */}
               <button onClick={handlePrint} disabled={selectedOrders.length === 0} style={{
                 width:"100%",padding:"16px",borderRadius:10,border:"none",cursor:selectedOrders.length?"pointer":"not-allowed",
                 background:selectedOrders.length?"#f27a1a":"#1e2235",
@@ -1182,8 +1123,6 @@ function App() {
               }}>
                 🖨️ Yazdır
               </button>
-
-
 
               {printedOrders.length > 0 && (
                 <div style={{padding:"12px 16px",background:"#1a1a2e",borderRadius:8,border:"1px solid #6366f1",textAlign:"center"}}>
