@@ -145,12 +145,12 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 20px;
-      height: 20px;
+      width: 26px;
+      height: 26px;
       background: #f27a1a;
       color: #fff;
       border-radius: 50%;
-      font-size: 10px;
+      font-size: 13px;
       font-weight: 700;
       flex-shrink: 0;
     }
@@ -376,6 +376,8 @@ function ProductRow({ line, isFirst }) {
   const [enlarged, setEnlarged] = useState(false);
   const imageUrl = line.productImage || line.images?.[0]?.url || line.imageUrl ||
   (line.contentId ? `https://cdn.dsmcdn.com/ty${Math.floor(line.contentId/1000000)}/product/media/images/prod/PGW/${line.contentId}/images/alternative_0.jpg` : null);
+  const qty = line.quantity || 1;
+  const badgeBg = qty >= 2 ? "#dc2626" : "#f27a1a";
   return (
     <div style={{display:"flex",gap:10,alignItems:"flex-start",paddingTop:isFirst?"0":"10px",marginTop:isFirst?"0":"10px",borderTop:isFirst?"none":"1px dashed #e5e7eb"}}>
       <div style={{flexShrink:0,position:"relative"}}>
@@ -394,7 +396,7 @@ function ProductRow({ line, isFirst }) {
       </div>
       <div style={{flex:1}}>
         <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:4}}>
-          <span className="quantity-badge">{line.quantity || 1}</span>
+          <span className="quantity-badge" style={{background:badgeBg}}>{qty}</span>
           <a href="#" className="product-name-link" title={line.productName}>{line.productName}</a>
         </div>
         <div className="product-detail">
