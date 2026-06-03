@@ -1002,16 +1002,26 @@ function App() {
   };
 
   useEffect(() => {
-    fetch("/api/config")
-      .then(r => r.json())
-      .then(data => {
-        if (data.hasConfig) {
-          setEnvLoaded(true);
-          fetchOrdersFromServer();
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Logo'yu base64'e çevir
+  fetch("/text-1773078104872.png")
+    .then(r => r.blob())
+    .then(blob => {
+      const reader = new FileReader();
+      reader.onload = (ev) => setLogoDataUrl(ev.target.result);
+      reader.readAsDataURL(blob);
+    })
+    .catch(() => {});
+
+  fetch("/api/config")
+    .then(r => r.json())
+    .then(data => {
+      if (data.hasConfig) {
+        setEnvLoaded(true);
+        fetchOrdersFromServer();
+      }
+    })
+    .catch(() => {});
+}, []);
 
   const toggleSelect = (id) => setSelectedOrders(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
 
