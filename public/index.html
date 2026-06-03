@@ -1058,27 +1058,15 @@ function App() {
     });
 
     document.getElementById("app").style.display = "none";
-
-// Tüm resimlerin yüklenmesini bekle
-const images = printArea.getElementsByTagName("img");
-const imagePromises = Array.from(images).map(img => {
-  if (img.complete) return Promise.resolve();
-  return new Promise(resolve => {
-    img.onload = resolve;
-    img.onerror = resolve; // hata olsa bile devam et
-  });
-});
-
-Promise.all(imagePromises).then(async () => {
-  setTimeout(async () => {
-    window.print();
-    document.getElementById("app").style.display = "block";
-    printArea.innerHTML = "";
-    const newPrinted = [...new Set([...printedOrders, ...toPrint.map(o => o.shipmentPackageId)])];
-    setPrintedOrders(newPrinted);
-    await savePrintedToServer(newPrinted);
-  }, 200);
-});
+    setTimeout(async () => {
+      window.print();
+      document.getElementById("app").style.display = "block";
+      printArea.innerHTML = "";
+      const newPrinted = [...new Set([...printedOrders, ...toPrint.map(o => o.shipmentPackageId)])];
+      setPrintedOrders(newPrinted);
+      await savePrintedToServer(newPrinted);
+    }, 100);
+  };
 
   const btn = (label, t) => (
     <button onClick={()=>setTab(t)} style={{
