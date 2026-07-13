@@ -3,44 +3,21 @@ const cors = require("cors");
 const { Pool } = require("pg");
 const session = require("express-session");
 const bcrypt = require("bcryptjs");
+const helmet = require("helmet");
+const pgSession = require("connect-pg-simple")(session);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ===================== AUTH YAPILANDIRMASI =====================
+// ===================== YAPILANDIRMA =====================
 
-// Brute-force koruması: IP başına deneme sayısı
-const loginAttempts = new Map();
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000; // 15 dakika
-
-function checkBruteForce(ip) {
-  const entry = loginAttempts.get(ip);
-  if (!entry) return { blocked: false };
-  if (Date.now() - entry.firstAttempt > LOCKOUT_MS) {
-    loginAttempts.delete(ip);
-    return { blocked: false };
-  }
-  if (entry.count >= MAX_ATTEMPTS) {
-    const remaining = Math.ceil((LOCKOUT_MS - (Date.now() - entry.firstAttempt)) / 60000);
-    return { blocked: true, remaining };
-  }
-  return { blocked: false };
-}
-
-function recordFailedAttempt(ip) {
-  const entry = loginAttempts.get(ip) || { count: 0, firstAttempt: Date.now() };
-  entry.count += 1;
-  loginAttempts.set(ip, entry);
-}
-
-function clearAttempts(ip) {
-  loginAttempts.delete(ip);
-}
-
-// Ortam değişkenlerinden alınan şifre (ADMIN_PASSWORD)
-// Railway dashboard → Variables bölümünden ayarlayın
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
 const SESSION_SECRET = process.env.SESSION_SECRET || "dev-secret-change-in-production";
+// FIX 5: CORS kısıtlaması — Railway URL'inizi ALLOWED_ORIGIN olarak ayarlayın
+// Railway dashboard → Variables → ALLOWED_ORIGIN = https://glaren.up.railway.app
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "http://localhost:3001";
+
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 dakika
 
 // Şifreyi hash'le (uygulama başlarken bir kere yapılır)
 let passwordHash = "";
@@ -49,28 +26,118 @@ bcrypt.hash(ADMIN_PASSWORD, 10).then(hash => {
   console.log("✅ Auth hazır");
 });
 
-app.use(cors());
+// ===================== POSTGRESQL BAĞLANTISI =====================
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// ===================== GÜVENLIK MİDDLEWARE'LERİ =====================
+
+// FIX 2: Güvenlik header'ları (clickjacking, XSS, MIME sniffing koruması)
+app.use(helmet({
+  contentSecurityPolicy: false, // Babel CDN kullandığı için kapalı
+}));
+
+// FIX 5: CORS kısıtlaması — sadece kendi URL'imize izin ver
+app.use(cors({
+  origin: ALLOWED_ORIGIN,
+  credentials: true,
+}));
+
 app.use(express.json());
 
-// Railway / Heroku gibi reverse proxy arkasında çalışırken
-// secure cookie'lerin doğru çalışması için gerekli
+// Railway / Heroku reverse proxy için HTTPS güveni
 app.set("trust proxy", 1);
 
-// Session middleware
+// FIX 4: Session'ları PostgreSQL'e taşı (deploy'larda oturum korunur, memory leak yok)
 app.use(session({
+  store: new pgSession({
+    pool,
+    tableName: "user_sessions",
+    createTableIfMissing: true,  // Tabloyu otomatik oluştur
+  }),
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true,                          // JS ile okunamaz (XSS koruması)
-    sameSite: "lax",                         // CSRF koruması
-    secure: process.env.NODE_ENV === "production", // Production'da HTTPS zorunlu
-    maxAge: 8 * 60 * 60 * 1000,             // 8 saat
+    httpOnly: true,                                    // XSS koruması
+    sameSite: "lax",                                   // CSRF koruması
+    secure: process.env.NODE_ENV === "production",     // Sadece HTTPS
+    maxAge: 8 * 60 * 60 * 1000,                       // 8 saat
   },
 }));
 
-// Statik dosyalar (login sayfası dahil)
+// Statik dosyalar
 app.use(express.static("public"));
+
+// ===================== DB BAŞLATMA =====================
+
+async function initDB() {
+  try {
+    // Yazdırılan siparişler tablosu
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS printed_orders (
+        id BIGINT PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    // FIX 3: Brute-force tablosu (bellekten DB'ye taşındı, restart'ta sıfırlanmaz)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS login_attempts (
+        ip TEXT PRIMARY KEY,
+        count INT DEFAULT 1,
+        first_attempt TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    console.log("✅ Veritabanı hazır");
+  } catch (e) {
+    console.error("❌ Veritabanı hatası:", e.message);
+  }
+}
+initDB();
+
+// ===================== FIX 3: DB TABANLI BRUTE-FORCE KORUMASI =====================
+
+async function checkBruteForce(ip) {
+  try {
+    // Süresi geçmiş kayıtları temizle
+    await pool.query(
+      "DELETE FROM login_attempts WHERE first_attempt < NOW() - INTERVAL '15 minutes'"
+    );
+    const result = await pool.query("SELECT count FROM login_attempts WHERE ip = $1", [ip]);
+    if (!result.rows.length) return { blocked: false };
+    const count = result.rows[0].count;
+    if (count >= MAX_ATTEMPTS) {
+      const timeRes = await pool.query(
+        "SELECT CEIL(EXTRACT(EPOCH FROM (first_attempt + INTERVAL '15 minutes' - NOW())) / 60) AS mins FROM login_attempts WHERE ip = $1",
+        [ip]
+      );
+      const remaining = Math.max(1, timeRes.rows[0]?.mins || 1);
+      return { blocked: true, remaining };
+    }
+    return { blocked: false };
+  } catch (e) {
+    return { blocked: false }; // DB hatasında engelleme
+  }
+}
+
+async function recordFailedAttempt(ip) {
+  try {
+    await pool.query(`
+      INSERT INTO login_attempts (ip, count, first_attempt)
+      VALUES ($1, 1, NOW())
+      ON CONFLICT (ip) DO UPDATE SET count = login_attempts.count + 1
+    `, [ip]);
+  } catch (e) {}
+}
+
+async function clearAttempts(ip) {
+  try {
+    await pool.query("DELETE FROM login_attempts WHERE ip = $1", [ip]);
+  } catch (e) {}
+}
 
 // ===================== AUTH ENDPOINT'LERİ =====================
 
@@ -82,7 +149,8 @@ app.get("/auth/status", (req, res) => {
 // Giriş
 app.post("/auth/login", async (req, res) => {
   const ip = req.ip;
-  const bruteCheck = checkBruteForce(ip);
+
+  const bruteCheck = await checkBruteForce(ip);
   if (bruteCheck.blocked) {
     return res.status(429).json({
       error: `Çok fazla başarısız deneme. ${bruteCheck.remaining} dakika sonra tekrar deneyin.`
@@ -90,15 +158,18 @@ app.post("/auth/login", async (req, res) => {
   }
 
   const { password } = req.body;
-  if (!password) {
-    return res.status(400).json({ error: "Şifre gereklidir." });
+
+  // FIX 6: Şifre uzunluk kontrolü
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: "Geçersiz şifre." });
   }
 
   const match = await bcrypt.compare(password, passwordHash);
   if (!match) {
-    recordFailedAttempt(ip);
-    const entry = loginAttempts.get(ip);
-    const remaining = entry ? MAX_ATTEMPTS - entry.count : MAX_ATTEMPTS;
+    await recordFailedAttempt(ip);
+    const entry = await pool.query("SELECT count FROM login_attempts WHERE ip = $1", [ip]);
+    const count = entry.rows[0]?.count || 1;
+    const remaining = Math.max(0, MAX_ATTEMPTS - count);
     return res.status(401).json({
       error: remaining > 0
         ? `Hatalı şifre. ${remaining} deneme hakkınız kaldı.`
@@ -106,10 +177,18 @@ app.post("/auth/login", async (req, res) => {
     });
   }
 
-  clearAttempts(ip);
-  req.session.authenticated = true;
-  req.session.loginTime = new Date().toISOString();
-  res.json({ ok: true });
+  await clearAttempts(ip);
+
+  // FIX 1: Session Fixation — giriş sonrası session ID'yi yenile
+  req.session.regenerate((err) => {
+    if (err) return res.status(500).json({ error: "Oturum hatası." });
+    req.session.authenticated = true;
+    req.session.loginTime = new Date().toISOString();
+    req.session.save((err2) => {
+      if (err2) return res.status(500).json({ error: "Oturum kaydedilemedi." });
+      res.json({ ok: true });
+    });
+  });
 });
 
 // Çıkış
@@ -122,7 +201,6 @@ app.post("/auth/logout", (req, res) => {
 
 // ===================== API KORUMA KATMANI =====================
 
-// Tüm /api/* endpoint'leri bu middleware'den geçer
 function requireAuth(req, res, next) {
   if (req.session.authenticated) return next();
   res.status(401).json({ error: "Oturum açmanız gerekiyor.", code: "UNAUTHORIZED" });
@@ -130,28 +208,7 @@ function requireAuth(req, res, next) {
 
 app.use("/api", requireAuth);
 
-// ===================== POSTGRESQL BAĞLANTISI =====================
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
-
-// Tabloyu otomatik oluştur
-async function initDB() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS printed_orders (
-        id BIGINT PRIMARY KEY,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    console.log("✅ Veritabanı hazır");
-  } catch (e) {
-    console.error("❌ Veritabanı hatası:", e.message);
-  }
-}
-initDB();
 
 // Yazdırılan siparişleri getir
 app.get("/api/printed", async (req, res) => {
