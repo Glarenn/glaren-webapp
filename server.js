@@ -159,9 +159,8 @@ app.post("/auth/login", async (req, res) => {
 
   const { password } = req.body;
 
-  // FIX 6: Şifre uzunluk kontrolü
-  if (!password || password.length < 6) {
-    return res.status(400).json({ error: "Geçersiz şifre." });
+  if (!password) {
+    return res.status(400).json({ error: "Şifre gereklidir." });
   }
 
   const match = await bcrypt.compare(password, passwordHash);
@@ -179,15 +178,15 @@ app.post("/auth/login", async (req, res) => {
 
   await clearAttempts(ip);
 
-  // FIX 1: Session Fixation — giriş sonrası session ID'yi yenile
-  req.session.regenerate((err) => {
-    if (err) return res.status(500).json({ error: "Oturum hatası." });
-    req.session.authenticated = true;
-    req.session.loginTime = new Date().toISOString();
-    req.session.save((err2) => {
-      if (err2) return res.status(500).json({ error: "Oturum kaydedilemedi." });
-      res.json({ ok: true });
-    });
+  // Session'a yazıp kaydet
+  req.session.authenticated = true;
+  req.session.loginTime = new Date().toISOString();
+  req.session.save((err) => {
+    if (err) {
+      console.error("Session kayıt hatası:", err);
+      return res.status(500).json({ error: "Oturum kaydedilemedi: " + err.message });
+    }
+    res.json({ ok: true });
   });
 });
 
