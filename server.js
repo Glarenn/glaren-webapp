@@ -1,14 +1,133 @@
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+const session = require("express-session");
+const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ===================== AUTH YAPILANDIRMASI =====================
+
+// Brute-force koruması: IP başına deneme sayısı
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 dakika
+
+function checkBruteForce(ip) {
+  const entry = loginAttempts.get(ip);
+  if (!entry) return { blocked: false };
+  if (Date.now() - entry.firstAttempt > LOCKOUT_MS) {
+    loginAttempts.delete(ip);
+    return { blocked: false };
+  }
+  if (entry.count >= MAX_ATTEMPTS) {
+    const remaining = Math.ceil((LOCKOUT_MS - (Date.now() - entry.firstAttempt)) / 60000);
+    return { blocked: true, remaining };
+  }
+  return { blocked: false };
+}
+
+function recordFailedAttempt(ip) {
+  const entry = loginAttempts.get(ip) || { count: 0, firstAttempt: Date.now() };
+  entry.count += 1;
+  loginAttempts.set(ip, entry);
+}
+
+function clearAttempts(ip) {
+  loginAttempts.delete(ip);
+}
+
+// Ortam değişkenlerinden alınan şifre (ADMIN_PASSWORD)
+// Railway dashboard → Variables bölümünden ayarlayın
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
+const SESSION_SECRET = process.env.SESSION_SECRET || "dev-secret-change-in-production";
+
+// Şifreyi hash'le (uygulama başlarken bir kere yapılır)
+let passwordHash = "";
+bcrypt.hash(ADMIN_PASSWORD, 10).then(hash => {
+  passwordHash = hash;
+  console.log("✅ Auth hazır");
+});
+
 app.use(cors());
 app.use(express.json());
+
+// Session middleware
+app.use(session({
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,                          // JS ile okunamaz (XSS koruması)
+    sameSite: "lax",                         // CSRF koruması
+    secure: process.env.NODE_ENV === "production", // Production'da HTTPS zorunlu
+    maxAge: 8 * 60 * 60 * 1000,             // 8 saat
+  },
+}));
+
+// Statik dosyalar (login sayfası dahil)
 app.use(express.static("public"));
 
-// PostgreSQL bağlantısı
+// ===================== AUTH ENDPOINT'LERİ =====================
+
+// Oturum durumu sorgula
+app.get("/auth/status", (req, res) => {
+  res.json({ authenticated: !!req.session.authenticated });
+});
+
+// Giriş
+app.post("/auth/login", async (req, res) => {
+  const ip = req.ip;
+  const bruteCheck = checkBruteForce(ip);
+  if (bruteCheck.blocked) {
+    return res.status(429).json({
+      error: `Çok fazla başarısız deneme. ${bruteCheck.remaining} dakika sonra tekrar deneyin.`
+    });
+  }
+
+  const { password } = req.body;
+  if (!password) {
+    return res.status(400).json({ error: "Şifre gereklidir." });
+  }
+
+  const match = await bcrypt.compare(password, passwordHash);
+  if (!match) {
+    recordFailedAttempt(ip);
+    const entry = loginAttempts.get(ip);
+    const remaining = entry ? MAX_ATTEMPTS - entry.count : MAX_ATTEMPTS;
+    return res.status(401).json({
+      error: remaining > 0
+        ? `Hatalı şifre. ${remaining} deneme hakkınız kaldı.`
+        : `Hesap kilitlendi. 15 dakika sonra tekrar deneyin.`
+    });
+  }
+
+  clearAttempts(ip);
+  req.session.authenticated = true;
+  req.session.loginTime = new Date().toISOString();
+  res.json({ ok: true });
+});
+
+// Çıkış
+app.post("/auth/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie("connect.sid");
+    res.json({ ok: true });
+  });
+});
+
+// ===================== API KORUMA KATMANI =====================
+
+// Tüm /api/* endpoint'leri bu middleware'den geçer
+function requireAuth(req, res, next) {
+  if (req.session.authenticated) return next();
+  res.status(401).json({ error: "Oturum açmanız gerekiyor.", code: "UNAUTHORIZED" });
+}
+
+app.use("/api", requireAuth);
+
+// ===================== POSTGRESQL BAĞLANTISI =====================
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
