@@ -52,6 +52,10 @@ bcrypt.hash(ADMIN_PASSWORD, 10).then(hash => {
 app.use(cors());
 app.use(express.json());
 
+// Railway / Heroku gibi reverse proxy arkasında çalışırken
+// secure cookie'lerin doğru çalışması için gerekli
+app.set("trust proxy", 1);
+
 // Session middleware
 app.use(session({
   secret: SESSION_SECRET,
